@@ -26,7 +26,6 @@
 
       <div class="titlebar-center">
         <span class="status-dot" id="vault-status-dot"></span>
-        <span id="vault-status-text">ЗАЩИЩЕНО (ZERO-KNOWLEDGE)</span>
       </div>
 
       <div class="titlebar-controls">
@@ -47,15 +46,11 @@
       <div class="nav-tabs">
         <button class="nav-tab-btn active" data-tab="tab-vault">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <span>Сейф</span>
+          <span>Пароли</span>
         </button>
         <button class="nav-tab-btn" data-tab="tab-generator">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
           <span>Генератор</span>
-        </button>
-        <button class="nav-tab-btn" data-tab="tab-audit">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <span>Аудит</span>
         </button>
         <button class="nav-tab-btn" data-tab="tab-customization">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
@@ -72,7 +67,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           <span>Новая запись</span>
         </button>
-        <button class="btn btn-secondary btn-icon" id="btn-lock-vault" title="Заблокировать сейф">
+        <button class="btn btn-secondary btn-icon" id="btn-lock-vault" title="Заблокировать">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </button>
       </div>
@@ -140,7 +135,7 @@
           <div class="detail-empty-state" id="detail-empty-view">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <div style="font-weight: 600; font-size: 1rem; color: #fff;">Выберите запись из списка</div>
-            <div style="font-size: 0.8rem; max-width: 260px;">Или нажмите кнопку «Новая запись», чтобы сохранить пароль в зашифрованный сейф.</div>
+            <div style="font-size: 0.8rem; max-width: 260px;">Или нажмите кнопку «Новая запись», чтобы сохранить пароль.</div>
           </div>
 
           <div id="detail-active-view" style="display: none; width: 100%;">
@@ -281,31 +276,7 @@
         </div>
       </section>
 
-      <!-- 3. SECURITY AUDIT TAB -->
-      <section class="tab-pane" id="tab-audit">
-        <div class="tab-centered-container">
-          <div class="options-card" style="align-items: center; text-align: center; padding: 32px 24px;">
-            <div style="font-size: 0.8rem; font-family: var(--font-mono); color: var(--text-dim); text-transform: uppercase;">Индекс защищённости сейфа</div>
-            <div style="font-size: 3.5rem; font-weight: 800; font-family: var(--font-mono); color: var(--accent-primary);" id="audit-score-num">100%</div>
-            <div style="font-size: 0.85rem; color: var(--text-muted); max-width: 420px;" id="audit-summary-text">
-              Все пароли в сейфе имеют криптостойкую энтропию и не повторяются.
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-            <div class="options-card">
-              <span class="field-label">Слабые пароли (&lt; 10 символов)</span>
-              <div style="font-size: 1.8rem; font-weight: 700; color: #f43f5e;" id="audit-weak-count">0</div>
-            </div>
-            <div class="options-card">
-              <span class="field-label">Повторяющиеся пароли</span>
-              <div style="font-size: 1.8rem; font-weight: 700; color: #f59e0b;" id="audit-reused-count">0</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 4. CUSTOMIZATION & LIVE WALLPAPER TAB -->
+      <!-- 3. CUSTOMIZATION & LIVE WALLPAPER TAB -->
       <section class="tab-pane" id="tab-customization">
         <div class="tab-centered-container">
           <!-- Themes Palette Card -->
@@ -426,7 +397,7 @@
                 </select>
               </div>
               <div class="switch-item">
-                <span>Автоблокировка сейфа</span>
+                <span>Автоблокировка</span>
                 <select id="select-autolock-timer" class="form-control" style="width: auto; padding: 4px 8px;">
                   <option value="1">Через 1 мин</option>
                   <option value="5" selected>Через 5 мин</option>
@@ -440,7 +411,7 @@
           <div class="options-card">
             <span class="field-label">Резервное копирование и экспорт</span>
             <div style="display: flex; gap: 12px;">
-              <button class="btn btn-secondary" id="btn-export-vault">Экспорт зашифрованного сейфа (.aegis)</button>
+              <button class="btn btn-secondary" id="btn-export-vault">Экспорт базы (.aegis)</button>
               <button class="btn btn-secondary" id="btn-import-vault">Импорт базы</button>
             </div>
           </div>
@@ -461,7 +432,7 @@
   <div class="modal-overlay" id="item-modal">
     <div class="modal-window">
       <div class="modal-header">
-        <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff;" id="modal-heading-text">Новая запись в сейф</h3>
+        <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff;" id="modal-heading-text">Новая запись</h3>
         <button class="win-btn close" id="btn-modal-close">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -532,12 +503,12 @@
       </div>
       <div>
         <h2 style="font-size: 1.35rem; font-weight: 700; color: #fff; letter-spacing: 0.04em;" id="lock-title">AEGIS PASS</h2>
-        <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;" id="lock-subtitle">Введите мастер-пароль для расшифровки сейфа</div>
+        <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;" id="lock-subtitle">Введите мастер-пароль</div>
       </div>
 
       <form id="lock-form" style="width: 100%; display: flex; flex-direction: column; gap: 14px;">
-        <input type="password" id="master-password-input" class="form-control" placeholder="Мастер-пароль..." required autofocus style="text-align: center; font-size: 1rem; padding: 12px;">
-        <button type="submit" class="btn btn-primary" style="padding: 12px; font-size: 0.9rem;" id="btn-unlock">Разблокировать сейф</button>
+        <input type="password" id="master-password-input" class="form-control" placeholder="Мастер-пароль (минимум 8 символов)..." minlength="8" required autofocus style="text-align: center; font-size: 1rem; padding: 12px;">
+        <button type="submit" class="btn btn-primary" style="padding: 12px; font-size: 0.9rem;" id="btn-unlock">Разблокировать</button>
       </form>
       <div id="lock-error-msg" style="font-size: 0.78rem; color: #f43f5e; display: none;">Неверный мастер-пароль</div>
     </div>

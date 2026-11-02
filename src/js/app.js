@@ -499,18 +499,24 @@
   // SECURITY AUDIT TAB
   // ==============================================================================
   function updateAuditTab() {
+    const scoreEl = document.getElementById('audit-score-num');
+    if (!scoreEl) return;
     const audit = window.PasswordGenerator.auditVault(vaultItems);
-    document.getElementById('audit-score-num').innerText = `${audit.healthScore}%`;
-    document.getElementById('audit-weak-count').innerText = audit.weakCount;
-    document.getElementById('audit-reused-count').innerText = audit.reusedCount;
+    scoreEl.innerText = `${audit.healthScore}%`;
+    const weakEl = document.getElementById('audit-weak-count');
+    if (weakEl) weakEl.innerText = audit.weakCount;
+    const reusedEl = document.getElementById('audit-reused-count');
+    if (reusedEl) reusedEl.innerText = audit.reusedCount;
 
     const summary = document.getElementById('audit-summary-text');
-    if (audit.weakCount > 0 || audit.reusedCount > 0) {
-      summary.innerText = `Внимание: обнаружено ${audit.weakCount} слабых паролей и ${audit.reusedCount} повторов. Рекомендуется заменить их на уникальные.`;
-      summary.style.color = '#f59e0b';
-    } else {
-      summary.innerText = 'Все пароли в сейфе имеют криптостойкую энтропию и не повторяются.';
-      summary.style.color = 'var(--text-muted)';
+    if (summary) {
+      if (audit.weakCount > 0 || audit.reusedCount > 0) {
+        summary.innerText = `Внимание: обнаружено ${audit.weakCount} слабых паролей и ${audit.reusedCount} повторов. Рекомендуется заменить их на уникальные.`;
+        summary.style.color = '#f59e0b';
+      } else {
+        summary.innerText = 'Все пароли имеют криптостойкую энтропию и не повторяются.';
+        summary.style.color = 'var(--text-muted)';
+      }
     }
   }
 
@@ -657,6 +663,24 @@
     const passInput = document.getElementById('master-password-input');
     const errMsg = document.getElementById('lock-error-msg');
 
+    const updateLockStateUi = async () => {
+      try {
+        if (window.aegis) {
+          const raw = await window.aegis.readVault();
+          const sub = document.getElementById('lock-subtitle');
+          const btn = document.getElementById('btn-unlock');
+          if (!raw) {
+            if (sub) sub.textContent = 'Первый запуск: придумайте мастер-пароль (минимум 8 символов)';
+            if (btn) btn.textContent = 'Создать и войти';
+          } else {
+            if (sub) sub.textContent = 'Введите мастер-пароль';
+            if (btn) btn.textContent = 'Разблокировать';
+          }
+        }
+      } catch (e) {}
+    };
+    updateLockStateUi();
+
     // Lock button in header
     document.getElementById('btn-lock-vault').addEventListener('click', () => {
       lockVault();
@@ -666,7 +690,12 @@
       e.preventDefault();
       errMsg.style.display = 'none';
       const masterPassword = passInput.value;
-      if (!masterPassword) return;
+      if (!masterPassword || masterPassword.length < 8) {
+        errMsg.textContent = 'Мастер-пароль должен содержать минимум 8 символов';
+        errMsg.style.display = 'block';
+        if (themeEngine && themeEngine.sounds) themeEngine.sounds.playError();
+        return;
+      }
 
       try {
         let rawVault = null;
@@ -711,7 +740,7 @@
         passInput.value = '';
         lockScreen.classList.add('unlocked');
         themeEngine.sounds.playSuccess();
-        showToast('Сейф успешно расшифрован');
+        showToast('Хранилище успешно разблокировано');
         renderVaultList();
       } catch (err) {
         themeEngine.sounds.playLock();
