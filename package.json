@@ -4,7 +4,11 @@
   "description": "Aegis Pass - Bespoke Zero-Knowledge Cyber Security Password Vault",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:portable": "electron-builder --win portable"
   },
   "keywords": [
     "password-manager",
@@ -15,7 +19,35 @@
   ],
   "author": "Matvey",
   "license": "MIT",
+  "build": {
+    "appId": "com.aegis.pass",
+    "productName": "Aegis Pass",
+    "copyright": "Copyright © 2026 Aegis Cyber Security",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "src/assets/icons/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Aegis Pass"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*"
+    ]
+  },
   "devDependencies": {
-    "electron": "^45.2.1"
+    "electron": "^45.2.1",
+    "electron-builder": "^25.1.8"
   }
 }
