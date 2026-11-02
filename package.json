@@ -1,0 +1,21 @@
+{
+  "name": "aegis-pass",
+  "version": "1.0.0",
+  "description": "Aegis Pass - Bespoke Zero-Knowledge Cyber Security Password Vault",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [
+    "password-manager",
+    "cybersecurity",
+    "zero-knowledge",
+    "aes-256",
+    "aegis"
+  ],
+  "author": "Matvey",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^45.2.1"
+  }
+}

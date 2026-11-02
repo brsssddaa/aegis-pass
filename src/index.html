@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aegis Pass // Cyber Enclave Vault</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Interactive 3D Hologram Cube Canvas -->
+  <canvas id="bg-canvas"></canvas>
+  <div class="bg-vignette"></div>
+
+  <!-- Root Application Shell -->
+  <div class="app-container">
+    <!-- Frameless Titlebar -->
+    <header class="titlebar">
+      <div class="titlebar-brand">
+        <svg class="brand-shield-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+        <span class="brand-title">AEGIS PASS</span>
+        <span class="brand-badge">AES-256</span>
+      </div>
+
+      <div class="titlebar-center">
+        <span class="status-dot" id="vault-status-dot"></span>
+        <span id="vault-status-text">ЗАЩИЩЕНО (ZERO-KNOWLEDGE)</span>
+      </div>
+
+      <div class="titlebar-controls">
+        <button class="win-btn" id="btn-win-min" title="Свернуть">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button class="win-btn" id="btn-win-max" title="Развернуть">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+        </button>
+        <button class="win-btn close" id="btn-win-close" title="Закрыть">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Top Navigation Header -->
+    <nav class="nav-header">
+      <div class="nav-tabs">
+        <button class="nav-tab-btn active" data-tab="tab-vault">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span>Сейф</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="tab-generator">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span>Генератор</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="tab-audit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Аудит</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="tab-customization">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+          <span>Обои и Темы</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="tab-settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>Настройки</span>
+        </button>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-primary" id="btn-open-add-modal">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Новая запись</span>
+        </button>
+        <button class="btn btn-secondary btn-icon" id="btn-lock-vault" title="Заблокировать сейф">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Workspace Area -->
+    <main class="main-workspace">
+      <!-- 1. VAULT TAB -->
+      <section class="tab-pane active" id="tab-vault">
+        <!-- Left Categories Sidebar -->
+        <aside class="vault-sidebar">
+          <div class="sidebar-heading">Категории</div>
+          <button class="cat-btn active" data-category="all">
+            <div class="cat-btn-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              <span>Все записи</span>
+            </div>
+            <span class="cat-count" id="count-all">0</span>
+          </button>
+          <button class="cat-btn" data-category="favorites">
+            <div class="cat-btn-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>Избранное</span>
+            </div>
+            <span class="cat-count" id="count-favorites">0</span>
+          </button>
+          <button class="cat-btn" data-category="logins">
+            <div class="cat-btn-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+              <span>Сайты и игры</span>
+            </div>
+            <span class="cat-count" id="count-logins">0</span>
+          </button>
+          <button class="cat-btn" data-category="cards">
+            <div class="cat-btn-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              <span>Банк. карты</span>
+            </div>
+            <span class="cat-count" id="count-cards">0</span>
+          </button>
+          <button class="cat-btn" data-category="notes">
+            <div class="cat-btn-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              <span>Секретные заметки</span>
+            </div>
+            <span class="cat-count" id="count-notes">0</span>
+          </button>
+        </aside>
+
+        <!-- Center Items List Column -->
+        <section class="vault-items-col">
+          <div class="items-search-box">
+            <div class="search-input-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="search-vault-input" class="search-input" placeholder="Поиск сайтов, логинов...">
+            </div>
+          </div>
+          <div class="items-scroll-list" id="vault-items-container">
+            <!-- Dynamic Password Items Injected Here -->
+          </div>
+        </section>
+
+        <!-- Right Item Detail Column -->
+        <section class="vault-detail-col" id="vault-detail-pane">
+          <div class="detail-empty-state" id="detail-empty-view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <div style="font-weight: 600; font-size: 1rem; color: #fff;">Выберите запись из списка</div>
+            <div style="font-size: 0.8rem; max-width: 260px;">Или нажмите кнопку «Новая запись», чтобы сохранить пароль в зашифрованный сейф.</div>
+          </div>
+
+          <div id="detail-active-view" style="display: none; width: 100%;">
+            <div class="detail-header">
+              <div class="detail-title-wrap">
+                <div class="detail-big-icon" id="detail-icon-wrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                </div>
+                <div>
+                  <h2 class="detail-title" id="detail-title-text">Steam Account</h2>
+                  <div class="detail-meta" id="detail-category-badge">САЙТЫ И ИГРЫ</div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary btn-sm" id="btn-detail-edit">Изменить</button>
+                <button class="btn btn-danger btn-sm" id="btn-detail-delete">Удалить</button>
+              </div>
+            </div>
+
+            <div class="fields-stack">
+              <!-- Login / Username Field -->
+              <div class="field-card" id="field-card-username">
+                <div class="field-info">
+                  <span class="field-label">Логин / Email</span>
+                  <span class="field-value" id="detail-username-val">user@example.com</span>
+                </div>
+                <div class="field-actions">
+                  <button class="btn btn-secondary btn-sm" id="btn-copy-username" title="Скопировать логин">Скопировать</button>
+                </div>
+              </div>
+
+              <!-- Password Field -->
+              <div class="field-card" id="field-card-password">
+                <div class="field-info">
+                  <span class="field-label">Пароль</span>
+                  <span class="field-value" id="detail-password-val">••••••••••••••••</span>
+                </div>
+                <div class="field-actions">
+                  <button class="btn btn-secondary btn-icon btn-sm" id="btn-toggle-pass-reveal" title="Показать/скрыть">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                  <button class="btn btn-primary btn-sm" id="btn-copy-password" title="Скопировать пароль">Скопировать</button>
+                </div>
+              </div>
+
+              <!-- Website URL Field -->
+              <div class="field-card" id="field-card-url">
+                <div class="field-info">
+                  <span class="field-label">Адрес сайта</span>
+                  <span class="field-value" id="detail-url-val">https://store.steampowered.com</span>
+                </div>
+                <div class="field-actions">
+                  <button class="btn btn-secondary btn-sm" id="btn-copy-url">Копировать URL</button>
+                </div>
+              </div>
+
+              <!-- Notes Field -->
+              <div class="field-card" id="field-card-notes" style="align-items: flex-start;">
+                <div class="field-info">
+                  <span class="field-label">Секретные заметки</span>
+                  <div style="font-size: 0.82rem; color: var(--text-platinum); white-space: pre-wrap; margin-top: 4px;" id="detail-notes-val"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- 2. GENERATOR TAB -->
+      <section class="tab-pane" id="tab-generator">
+        <div class="tab-centered-container">
+          <div class="generator-display-box">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span class="field-label">Сгенерированный пароль</span>
+              <button class="btn btn-secondary btn-sm" id="btn-refresh-gen">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                <span>Перегенерировать</span>
+              </button>
+            </div>
+            <div class="gen-pass-string" id="generator-password-output">Generating...</div>
+            <div class="strength-bar-wrap">
+              <div class="strength-bar-track">
+                <div class="strength-bar-fill" id="generator-strength-fill"></div>
+              </div>
+              <span class="strength-label" id="generator-strength-label">Криптостойкий</span>
+              <button class="btn btn-primary btn-sm" id="btn-copy-gen-pass" style="margin-left: auto;">Скопировать пароль</button>
+            </div>
+          </div>
+
+          <!-- Generator Options Card -->
+          <div class="options-card">
+            <div class="slider-row">
+              <div class="slider-header">
+                <span class="field-label">Длина пароля</span>
+                <span style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-light);" id="gen-length-val">18 символов</span>
+              </div>
+              <input type="range" id="gen-slider-length" min="8" max="64" value="18">
+            </div>
+
+            <div class="switches-grid">
+              <div class="switch-item">
+                <span>Заглавные буквы (A-Z)</span>
+                <label class="toggle">
+                  <input type="checkbox" id="gen-opt-uppercase" checked>
+                  <span class="slider-round"></span>
+                </label>
+              </div>
+              <div class="switch-item">
+                <span>Строчные буквы (a-z)</span>
+                <label class="toggle">
+                  <input type="checkbox" id="gen-opt-lowercase" checked>
+                  <span class="slider-round"></span>
+                </label>
+              </div>
+              <div class="switch-item">
+                <span>Цифры (0-9)</span>
+                <label class="toggle">
+                  <input type="checkbox" id="gen-opt-numbers" checked>
+                  <span class="slider-round"></span>
+                </label>
+              </div>
+              <div class="switch-item">
+                <span>Спецсимволы (!@#$)</span>
+                <label class="toggle">
+                  <input type="checkbox" id="gen-opt-symbols" checked>
+                  <span class="slider-round"></span>
+                </label>
+              </div>
+              <div class="switch-item" style="grid-column: span 2;">
+                <span>Исключить похожие символы (0, O, l, 1, I)</span>
+                <label class="toggle">
+                  <input type="checkbox" id="gen-opt-noambig" checked>
+                  <span class="slider-round"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. SECURITY AUDIT TAB -->
+      <section class="tab-pane" id="tab-audit">
+        <div class="tab-centered-container">
+          <div class="options-card" style="align-items: center; text-align: center; padding: 32px 24px;">
+            <div style="font-size: 0.8rem; font-family: var(--font-mono); color: var(--text-dim); text-transform: uppercase;">Индекс защищённости сейфа</div>
+            <div style="font-size: 3.5rem; font-weight: 800; font-family: var(--font-mono); color: var(--accent-primary);" id="audit-score-num">100%</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); max-width: 420px;" id="audit-summary-text">
+              Все пароли в сейфе имеют криптостойкую энтропию и не повторяются.
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div class="options-card">
+              <span class="field-label">Слабые пароли (&lt; 10 символов)</span>
+              <div style="font-size: 1.8rem; font-weight: 700; color: #f43f5e;" id="audit-weak-count">0</div>
+            </div>
+            <div class="options-card">
+              <span class="field-label">Повторяющиеся пароли</span>
+              <div style="font-size: 1.8rem; font-weight: 700; color: #f59e0b;" id="audit-reused-count">0</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. CUSTOMIZATION & LIVE WALLPAPER TAB -->
+      <section class="tab-pane" id="tab-customization">
+        <div class="tab-centered-container">
+          <!-- Themes Palette Card -->
+          <div class="options-card">
+            <span class="field-label">Цветовая кибер-палитра</span>
+            <div class="themes-grid">
+              <div class="theme-card active" data-theme="emerald">
+                <div class="theme-swatch" style="background: #10b981; color: #10b981;"></div>
+                <span class="theme-label">Emerald</span>
+              </div>
+              <div class="theme-card" data-theme="amethyst">
+                <div class="theme-swatch" style="background: #a855f7; color: #a855f7;"></div>
+                <span class="theme-label">Amethyst</span>
+              </div>
+              <div class="theme-card" data-theme="amber">
+                <div class="theme-swatch" style="background: #f59e0b; color: #f59e0b;"></div>
+                <span class="theme-label">Cyber Gold</span>
+              </div>
+              <div class="theme-card" data-theme="cyan">
+                <div class="theme-swatch" style="background: #06b6d4; color: #06b6d4;"></div>
+                <span class="theme-label">Ice Cyan</span>
+              </div>
+              <div class="theme-card" data-theme="ruby">
+                <div class="theme-swatch" style="background: #f43f5e; color: #f43f5e;"></div>
+                <span class="theme-label">Crimson</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Background 3D Engine Mode -->
+          <div class="options-card">
+            <span class="field-label">Анимированный 3D фон</span>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <button class="btn btn-secondary active" id="btn-mode-cube" style="justify-content: flex-start; padding: 12px 16px;">
+                <span style="font-weight: 600;">3D Квантовый Куб</span>
+              </button>
+              <button class="btn btn-secondary" id="btn-mode-grid" style="justify-content: flex-start; padding: 12px 16px;">
+                <span style="font-weight: 600;">Кибер-сетка Неона</span>
+              </button>
+              <button class="btn btn-secondary" id="btn-mode-stardust" style="justify-content: flex-start; padding: 12px 16px;">
+                <span style="font-weight: 600;">Звёздный дрифт</span>
+              </button>
+              <button class="btn btn-secondary" id="btn-mode-clean" style="justify-content: flex-start; padding: 12px 16px;">
+                <span style="font-weight: 600;">Матовое стекло (Eco)</span>
+              </button>
+            </div>
+
+            <!-- 3D Speed Slider -->
+            <div class="slider-row" style="margin-top: 10px;">
+              <div class="slider-header">
+                <span class="field-label">Скорость вращения 3D-куба</span>
+                <span style="font-family: var(--font-mono);" id="bg-speed-val">1.0x</span>
+              </div>
+              <input type="range" id="slider-bg-speed" min="2" max="25" value="10">
+            </div>
+
+            <!-- Glass Blur Slider -->
+            <div class="slider-row" style="margin-top: 6px;">
+              <div class="slider-header">
+                <span class="field-label">Размытие стекла (Backdrop Blur)</span>
+                <span style="font-family: var(--font-mono);" id="glass-blur-val">16px</span>
+              </div>
+              <input type="range" id="slider-glass-blur" min="0" max="32" value="16">
+            </div>
+
+            <!-- Glass Opacity Slider -->
+            <div class="slider-row" style="margin-top: 6px;">
+              <div class="slider-header">
+                <span class="field-label">Прозрачность панелей (Glass Opacity)</span>
+                <span style="font-family: var(--font-mono);" id="glass-opacity-val">22%</span>
+              </div>
+              <input type="range" id="slider-glass-opacity" min="10" max="85" value="22">
+            </div>
+
+            <div class="switches-grid" style="margin-top: 10px;">
+              <div class="switch-item">
+                <span>Интерактивный наклон за мышью</span>
+                <label class="toggle">
+                  <input type="checkbox" id="toggle-mouse-tilt" checked>
+                  <span class="slider-round"></span>
+                </label>
+              </div>
+              <div class="switch-item">
+                <span>Неоновое свечение (Glow)</span>
+                <label class="toggle">
+                  <input type="checkbox" id="toggle-neon-glow" checked>
+                  <span class="slider-round"></span>
+                </label>
+              </div>
+              <div class="switch-item" style="grid-column: span 2;">
+                <span>Звуковые эффекты кибер-интерфейса (SFX)</span>
+                <label class="toggle">
+                  <input type="checkbox" id="toggle-cyber-sfx" checked>
+                  <span class="slider-round"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. SETTINGS TAB -->
+      <section class="tab-pane" id="tab-settings">
+        <div class="tab-centered-container">
+          <div class="options-card">
+            <span class="field-label">Безопасность и таймеры</span>
+            <div class="switches-grid">
+              <div class="switch-item">
+                <span>Автоочистка буфера обмена</span>
+                <select id="select-clipboard-timer" class="form-control" style="width: auto; padding: 4px 8px;">
+                  <option value="15">Через 15 сек</option>
+                  <option value="30" selected>Через 30 сек</option>
+                  <option value="60">Через 60 сек</option>
+                  <option value="0">Отключено</option>
+                </select>
+              </div>
+              <div class="switch-item">
+                <span>Автоблокировка сейфа</span>
+                <select id="select-autolock-timer" class="form-control" style="width: auto; padding: 4px 8px;">
+                  <option value="1">Через 1 мин</option>
+                  <option value="5" selected>Через 5 мин</option>
+                  <option value="15">Через 15 мин</option>
+                  <option value="0">Никогда</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="options-card">
+            <span class="field-label">Резервное копирование и экспорт</span>
+            <div style="display: flex; gap: 12px;">
+              <button class="btn btn-secondary" id="btn-export-vault">Экспорт зашифрованного сейфа (.aegis)</button>
+              <button class="btn btn-secondary" id="btn-import-vault">Импорт базы</button>
+            </div>
+          </div>
+
+          <div class="options-card">
+            <span class="field-label">О приложении</span>
+            <div style="font-size: 0.85rem; color: #fff; font-weight: 600;">Aegis Pass v1.0.0 (Desktop Edition)</div>
+            <div style="font-size: 0.78rem; color: var(--text-dim);">
+              Zero-Knowledge End-to-End Cryptography · Hardware AES-256-GCM · PBKDF2 150k Iterations.
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Item Edit/Add Modal Window -->
+  <div class="modal-overlay" id="item-modal">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff;" id="modal-heading-text">Новая запись в сейф</h3>
+        <button class="win-btn close" id="btn-modal-close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="item-form">
+        <div class="modal-body">
+          <input type="hidden" id="form-item-id">
+          
+          <div class="form-group">
+            <label class="form-label" for="form-title">Название сервиса</label>
+            <input type="text" id="form-title" class="form-control" placeholder="Например: Steam, Discord, Банк..." required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-category">Категория</label>
+            <select id="form-category" class="form-control">
+              <option value="logins">Сайты и игры</option>
+              <option value="cards">Банковская карта</option>
+              <option value="notes">Секретная заметка</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-username">Логин / Почта / Номер</label>
+            <input type="text" id="form-username" class="form-control" placeholder="username / user@mail.com">
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label class="form-label" for="form-password">Пароль / PIN</label>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-form-gen-quick" style="padding: 2px 8px; font-size: 0.7rem;">Сгенерировать</button>
+            </div>
+            <input type="text" id="form-password" class="form-control" placeholder="Введите или сгенерируйте пароль">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-url">Веб-сайт / Ссылка</label>
+            <input type="text" id="form-url" class="form-control" placeholder="https://...">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-notes">Заметки</label>
+            <textarea id="form-notes" class="form-control" rows="2" placeholder="Дополнительная секретная информация..."></textarea>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+            <input type="checkbox" id="form-favorite" style="width: 16px; height: 16px; accent-color: var(--accent-primary);">
+            <label for="form-favorite" style="font-size: 0.8rem; color: var(--text-platinum); cursor: pointer;">Добавить в Избранное ⭐</label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-modal-cancel">Отмена</button>
+          <button type="submit" class="btn btn-primary" id="btn-modal-submit">Сохранить запись</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Master Password Lock Screen Overlay -->
+  <div class="lock-screen-overlay" id="lock-screen">
+    <div class="lock-card">
+      <div class="lock-icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <div>
+        <h2 style="font-size: 1.35rem; font-weight: 700; color: #fff; letter-spacing: 0.04em;" id="lock-title">AEGIS PASS</h2>
+        <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;" id="lock-subtitle">Введите мастер-пароль для расшифровки сейфа</div>
+      </div>
+
+      <form id="lock-form" style="width: 100%; display: flex; flex-direction: column; gap: 14px;">
+        <input type="password" id="master-password-input" class="form-control" placeholder="Мастер-пароль..." required autofocus style="text-align: center; font-size: 1rem; padding: 12px;">
+        <button type="submit" class="btn btn-primary" style="padding: 12px; font-size: 0.9rem;" id="btn-unlock">Разблокировать сейф</button>
+      </form>
+      <div id="lock-error-msg" style="font-size: 0.78rem; color: #f43f5e; display: none;">Неверный мастер-пароль</div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-box" id="toast-box">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="toast-text">Пароль скопирован</span>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/cube-canvas.js"></script>
+  <script src="js/crypto-vault.js"></script>
+  <script src="js/generator.js"></script>
+  <script src="js/themes.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
