@@ -38,6 +38,12 @@
       this.particleCount = 50;
       this.particles = [];
 
+      // Anime / Cyber Hologram Companion Background
+      this.animeImg = new Image();
+      this.animeImg.src = 'assets/wallpaper_anime.jpg';
+      this.animeImgLoaded = false;
+      this.animeImg.onload = () => { this.animeImgLoaded = true; };
+
       this.initEvents();
       this.resize();
       this.initParticles();
@@ -300,6 +306,45 @@
       }
     }
 
+    renderAnimeHologram(cx, cy) {
+      const ctx = this.ctx;
+      if (!this.animeImgLoaded) return;
+
+      // Parallax mouse tilt
+      const maxShift = 25;
+      const offsetX = this.mouse.x * maxShift;
+      const offsetY = this.mouse.y * maxShift;
+
+      // Calculate cover dimensions
+      const imgRatio = this.animeImg.width / this.animeImg.height;
+      const screenRatio = this.width / this.height;
+      let drawW, drawH;
+
+      if (screenRatio > imgRatio) {
+        drawW = this.width * 1.06;
+        drawH = drawW / imgRatio;
+      } else {
+        drawH = this.height * 1.06;
+        drawW = drawH * imgRatio;
+      }
+
+      const drawX = cx - drawW / 2 + offsetX;
+      const drawY = cy - drawH / 2 + offsetY;
+
+      ctx.save();
+      // Smooth ambient blend
+      ctx.globalAlpha = 0.38;
+      ctx.drawImage(this.animeImg, drawX, drawY, drawW, drawH);
+
+      // Cyber hologram scanlines
+      ctx.globalAlpha = 0.05;
+      ctx.fillStyle = this.primaryColor;
+      for (let y = 0; y < this.height; y += 4) {
+        ctx.fillRect(0, y, this.width, 1.5);
+      }
+      ctx.restore();
+    }
+
     renderParticles(cx, cy) {
       const ctx = this.ctx;
       this.particles.forEach(p => {
@@ -343,6 +388,8 @@
         this.renderQuantumCube(cx, cy);
       } else if (this.mode === 'cyber-grid') {
         this.renderCyberGrid(cx, cy);
+      } else if (this.mode === 'anime-companion') {
+        this.renderAnimeHologram(cx, cy);
       } else if (this.mode === 'stardust') {
         // Particles already rendered above with enhanced alpha
       }

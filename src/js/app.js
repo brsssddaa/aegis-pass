@@ -90,6 +90,7 @@
     const modeBtnMap = {
       'quantum-cube': 'btn-mode-cube',
       'cyber-grid': 'btn-mode-grid',
+      'anime-companion': 'btn-mode-anime',
       'stardust': 'btn-mode-stardust',
       'frosted-clean': 'btn-mode-clean'
     };
@@ -534,6 +535,7 @@
     const modeBtnMap = [
       { id: 'btn-mode-cube', mode: 'quantum-cube' },
       { id: 'btn-mode-grid', mode: 'cyber-grid' },
+      { id: 'btn-mode-anime', mode: 'anime-companion' },
       { id: 'btn-mode-stardust', mode: 'stardust' },
       { id: 'btn-mode-clean', mode: 'frosted-clean' }
     ];
