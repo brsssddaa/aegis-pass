@@ -68,8 +68,8 @@ ipcMain.on('clipboard-copy', (event, text) => {
   }
 });
 
-// Local Encrypted Vault Storage (AppData / userData)
-const getVaultPath = () => path.join(app.getPath('userData'), 'aegis_vault.enc');
+// Local Vault Storage (AppData / userData)
+const getVaultPath = () => path.join(app.getPath('userData'), 'aegis_vault.json');
 const getSettingsPath = () => path.join(app.getPath('userData'), 'aegis_settings.json');
 const getWallpapersDir = () => {
   const dir = path.join(app.getPath('userData'), 'wallpapers');

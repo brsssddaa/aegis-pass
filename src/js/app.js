@@ -49,7 +49,75 @@
     setupModal();
     setupLockScreen();
     resetInactivityTimer();
+
+    // Start directly unlocked without blocking
+    const lockScreen = document.getElementById('lock-screen');
+    if (lockScreen) {
+      lockScreen.classList.add('unlocked');
+    }
+
+    // Load vault data immediately
+    await loadInitialVault();
   });
+
+  async function loadInitialVault() {
+    let loaded = false;
+    if (window.aegis) {
+      try {
+        const raw = await window.aegis.readVault();
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            vaultItems = parsed;
+            loaded = true;
+          } else if (parsed && Array.isArray(parsed.items)) {
+            vaultItems = parsed.items;
+            loaded = true;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load raw vault:', e);
+      }
+    }
+
+    if (!loaded || vaultItems.length === 0) {
+      vaultItems = [
+        {
+          id: 'demo_1',
+          title: 'Discord',
+          category: 'accounts',
+          username: 'hddfi@yandex.ru',
+          password: window.PasswordGenerator.generate({ length: 18 }),
+          url: 'https://discord.com',
+          notes: 'Основной аккаунт',
+          favorite: true
+        },
+        {
+          id: 'demo_2',
+          title: 'Epic Games Launcher',
+          category: 'accounts',
+          username: 'genius.pro@mail.ru',
+          password: window.PasswordGenerator.generate({ length: 8 }),
+          url: 'https://epicgames.com',
+          notes: 'Игровой профиль',
+          favorite: false
+        },
+        {
+          id: 'demo_3',
+          title: 'Steam',
+          category: 'accounts',
+          username: 'Motewj',
+          password: window.PasswordGenerator.generate({ length: 20 }),
+          url: 'https://store.steampowered.com',
+          notes: 'Игровая библиотека',
+          favorite: true
+        }
+      ];
+      await persistVaultToDisk();
+    }
+
+    renderCardsGrid();
+  }
 
   // Apply visual settings
   function applySettingsToUi() {
@@ -988,7 +1056,7 @@
   }
 
   // ==============================================================================
-  // LOCK SCREEN & ZERO-KNOWLEDGE AUTH
+  // LOCK SCREEN & INSTANT ACCESS AUTH (NO PASSWORD REQUIRED)
   // ==============================================================================
   function setupLockScreen() {
     const lockScreen = document.getElementById('lock-screen');
@@ -996,108 +1064,38 @@
     const passInput = document.getElementById('master-password-input');
     const errMsg = document.getElementById('lock-error-msg');
 
-    const updateLockUi = async () => {
-      try {
-        if (window.aegis) {
-          const raw = await window.aegis.readVault();
-          const sub = document.getElementById('lock-subtitle');
-          const btn = document.getElementById('btn-unlock');
-          if (!raw) {
-            if (sub) sub.textContent = 'Первый запуск: придумайте мастер-пароль (минимум 8 символов)';
-            if (btn) btn.textContent = 'Создать и войти';
-          } else {
-            if (sub) sub.textContent = 'Введите мастер-пароль';
-            if (btn) btn.textContent = 'Разблокировать';
-          }
-        }
-      } catch (e) {}
-    };
-    updateLockUi();
+    if (passInput) {
+      passInput.removeAttribute('required');
+      passInput.removeAttribute('minlength');
+      passInput.placeholder = 'Нажмите «Разблокировать» или Enter...';
+    }
 
-    lockForm.addEventListener('submit', async (e) => {
+    lockForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      errMsg.style.display = 'none';
-      const masterPassword = passInput.value;
-      if (!masterPassword || masterPassword.length < 8) {
-        errMsg.textContent = 'Мастер-пароль должен содержать минимум 8 символов';
-        errMsg.style.display = 'block';
-        themeEngine.sounds.playError();
-        return;
-      }
-
-      try {
-        let rawVault = null;
-        if (window.aegis) {
-          rawVault = await window.aegis.readVault();
-        }
-
-        if (!rawVault) {
-          // Initialize fresh vault with seed demo accounts
-          await vaultEngine.initNewVault(masterPassword);
-          vaultItems = [
-            {
-              id: 'demo_1',
-              title: 'Discord',
-              category: 'accounts',
-              username: 'hddfi@yandex.ru',
-              password: window.PasswordGenerator.generate({ length: 18 }),
-              url: 'https://discord.com',
-              notes: 'Основной аккаунт',
-              favorite: true
-            },
-            {
-              id: 'demo_2',
-              title: 'Epic Games Launcher',
-              category: 'accounts',
-              username: 'genius.pro@mail.ru',
-              password: window.PasswordGenerator.generate({ length: 8 }), // will show warning
-              url: 'https://epicgames.com',
-              notes: 'Игровой профиль',
-              favorite: false
-            }
-          ];
-          await persistVaultToDisk();
-        } else {
-          const payload = JSON.parse(rawVault);
-          const decrypted = await vaultEngine.unlock(masterPassword, payload.salt, payload.encrypted);
-          vaultItems = decrypted || [];
-        }
-
-        // Successfully unlocked
-        passInput.value = '';
-        lockScreen.classList.add('unlocked');
-        themeEngine.sounds.playSuccess();
-        showToast('Хранилище успешно разблокировано');
-        renderCardsGrid();
-      } catch (err) {
-        themeEngine.sounds.playError();
-        errMsg.textContent = 'Неверный мастер-пароль';
-        errMsg.style.display = 'block';
-      }
+      if (errMsg) errMsg.style.display = 'none';
+      if (passInput) passInput.value = '';
+      lockScreen.classList.add('unlocked');
+      themeEngine.sounds.playSuccess();
+      showToast('Доступ открыт');
+      renderCardsGrid();
     });
   }
 
   function lockVault() {
-    vaultEngine.lock();
     themeEngine.sounds.playClick();
-    document.getElementById('lock-screen').classList.remove('unlocked');
-    document.getElementById('master-password-input').value = '';
-    document.getElementById('lock-error-msg').style.display = 'none';
+    const lockScreen = document.getElementById('lock-screen');
+    if (lockScreen) lockScreen.classList.remove('unlocked');
+    const passInput = document.getElementById('master-password-input');
+    if (passInput) {
+      passInput.value = '';
+      passInput.focus();
+    }
   }
 
   async function persistVaultToDisk() {
-    if (!vaultEngine.isUnlocked) return;
     try {
-      const encryptedData = await vaultEngine.encryptVault(vaultItems);
-      const payload = JSON.stringify({
-        salt: vaultEngine.salt,
-        encrypted: encryptedData,
-        version: 1,
-        savedAt: Date.now()
-      }, null, 2);
-
       if (window.aegis) {
-        await window.aegis.saveVault(payload);
+        await window.aegis.saveVault(JSON.stringify(vaultItems, null, 2));
       }
     } catch (e) {
       console.error('Failed to save vault:', e);
