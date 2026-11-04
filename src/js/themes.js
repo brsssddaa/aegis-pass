@@ -6,6 +6,26 @@
   'use strict';
 
   const PALETTES = {
+    monochrome: {
+      primary: '#e6edf3',
+      primaryGlow: 'rgba(230, 237, 243, 0.2)',
+      primaryLight: '#ffffff',
+      borderGlow: 'rgba(230, 237, 243, 0.3)',
+      bgApp: '#090b10',
+      bgSidebar: '#0e1117',
+      bgCard: '#161b22',
+      bgCardHover: '#1f242c'
+    },
+    slate: {
+      primary: '#94a3b8',
+      primaryGlow: 'rgba(148, 163, 184, 0.2)',
+      primaryLight: '#cbd5e1',
+      borderGlow: 'rgba(148, 163, 184, 0.3)',
+      bgApp: '#0a0d12',
+      bgSidebar: '#10141a',
+      bgCard: '#181e26',
+      bgCardHover: '#202732'
+    },
     emerald: {
       primary: '#00d68f',
       primaryGlow: 'rgba(0, 214, 143, 0.35)',
@@ -84,21 +104,52 @@
       }
     }
 
+    // Modern haptic mechanical switch click
     playClick() {
       if (!this.enabled) return;
       try {
         this.init();
+        const now = this.ctx.currentTime;
+
+        // 1. High frequency tactile snap
         const osc = this.ctx.createOscillator();
+        const filter = this.ctx.createBiquadFilter();
         const gain = this.ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(800, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.035);
-        gain.gain.setValueAtTime(0.03, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.035);
-        osc.connect(gain);
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1400, now);
+        osc.frequency.exponentialRampToValueAtTime(180, now + 0.018);
+
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(2200, now);
+        filter.Q.setValueAtTime(1.8, now);
+
+        gain.gain.setValueAtTime(0.045, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.018);
+
+        osc.connect(filter);
+        filter.connect(gain);
         gain.connect(this.ctx.destination);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.04);
+
+        osc.start(now);
+        osc.stop(now + 0.02);
+
+        // 2. Subtle soft body tap (haptic low-end thud)
+        const sub = this.ctx.createOscillator();
+        const subGain = this.ctx.createGain();
+
+        sub.type = 'sine';
+        sub.frequency.setValueAtTime(160, now);
+        sub.frequency.exponentialRampToValueAtTime(65, now + 0.025);
+
+        subGain.gain.setValueAtTime(0.035, now);
+        subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.025);
+
+        sub.connect(subGain);
+        subGain.connect(this.ctx.destination);
+
+        sub.start(now);
+        sub.stop(now + 0.028);
       } catch (e) {}
     }
 
@@ -107,28 +158,40 @@
       try {
         this.init();
         const now = this.ctx.currentTime;
+        
+        // Modern luxury dual chime (harmonic crystal tones without arcade swoops)
         const osc1 = this.ctx.createOscillator();
         const osc2 = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+        const gain1 = this.ctx.createGain();
+        const gain2 = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
 
-        osc1.type = 'triangle';
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(3200, now);
+
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(880, now); // A5
+
         osc2.type = 'sine';
-        osc1.frequency.setValueAtTime(520, now);
-        osc1.frequency.exponentialRampToValueAtTime(880, now + 0.1);
-        osc2.frequency.setValueAtTime(1040, now);
-        osc2.frequency.exponentialRampToValueAtTime(1320, now + 0.12);
+        osc2.frequency.setValueAtTime(1320, now + 0.03); // E6 harmonic
 
-        gain.gain.setValueAtTime(0.04, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        gain1.gain.setValueAtTime(0.03, now);
+        gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
 
-        osc1.connect(gain);
-        osc2.connect(gain);
-        gain.connect(this.ctx.destination);
+        gain2.gain.setValueAtTime(0.0001, now);
+        gain2.gain.setValueAtTime(0.025, now + 0.03);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+
+        osc1.connect(gain1);
+        osc2.connect(gain2);
+        gain1.connect(filter);
+        gain2.connect(filter);
+        filter.connect(this.ctx.destination);
 
         osc1.start(now);
-        osc2.start(now);
-        osc1.stop(now + 0.15);
-        osc2.stop(now + 0.15);
+        osc1.stop(now + 0.23);
+        osc2.start(now + 0.03);
+        osc2.stop(now + 0.29);
       } catch (e) {}
     }
 
@@ -137,19 +200,29 @@
       try {
         this.init();
         const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
 
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(900, now);
-        osc.frequency.setValueAtTime(1200, now + 0.04);
-        gain.gain.setValueAtTime(0.04, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+        // Modern tactile double micro-tick (data capture haptic)
+        const osc1 = this.ctx.createOscillator();
+        const gain1 = this.ctx.createGain();
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(1800, now);
+        gain1.gain.setValueAtTime(0.025, now);
+        gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.015);
+        osc1.connect(gain1);
+        gain1.connect(this.ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.018);
 
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.09);
+        const osc2 = this.ctx.createOscillator();
+        const gain2 = this.ctx.createGain();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(2400, now + 0.025);
+        gain2.gain.setValueAtTime(0.02, now + 0.025);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
+        osc2.connect(gain2);
+        gain2.connect(this.ctx.destination);
+        osc2.start(now + 0.025);
+        osc2.stop(now + 0.048);
       } catch (e) {}
     }
 
@@ -158,33 +231,52 @@
       try {
         this.init();
         const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
 
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(240, now);
-        osc.frequency.setValueAtTime(180, now + 0.06);
+        // Muted tech rejection double-tap (subtle low-frequency haptic thud)
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(260, now);
+        filter.connect(this.ctx.destination);
 
-        gain.gain.setValueAtTime(0.04, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        const osc1 = this.ctx.createOscillator();
+        const gain1 = this.ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(95, now);
+        gain1.gain.setValueAtTime(0.04, now);
+        gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
+        osc1.connect(gain1);
+        gain1.connect(filter);
+        osc1.start(now);
+        osc1.stop(now + 0.04);
 
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.12);
+        const osc2 = this.ctx.createOscillator();
+        const gain2 = this.ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(75, now + 0.05);
+        gain2.gain.setValueAtTime(0.035, now + 0.05);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+        osc2.connect(gain2);
+        gain2.connect(filter);
+        osc2.start(now + 0.05);
+        osc2.stop(now + 0.095);
       } catch (e) {}
     }
   }
 
   class ThemeEngine {
     constructor() {
-      this.currentTheme = 'emerald';
+      this.currentTheme = 'monochrome';
       this.sounds = new SoundEngine();
     }
 
     applyPalette(themeKey) {
-      const palette = PALETTES[themeKey] || PALETTES.emerald;
+      const palette = PALETTES[themeKey] || PALETTES.monochrome;
       this.currentTheme = themeKey;
+
+      function hexToRgb(hex) {
+        const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return m ? `${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}` : '15, 20, 29';
+      }
 
       const root = document.documentElement;
       root.style.setProperty('--accent-primary', palette.primary);
@@ -195,6 +287,10 @@
       root.style.setProperty('--bg-sidebar', palette.bgSidebar);
       root.style.setProperty('--bg-card', palette.bgCard);
       root.style.setProperty('--bg-card-hover', palette.bgCardHover);
+
+      root.style.setProperty('--bg-sidebar-rgb', hexToRgb(palette.bgSidebar));
+      root.style.setProperty('--bg-card-rgb', hexToRgb(palette.bgCard));
+      root.style.setProperty('--bg-topbar-rgb', hexToRgb(palette.bgApp));
     }
   }
 

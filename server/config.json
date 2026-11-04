@@ -1,0 +1,11 @@
+{
+  "port": 8088,
+  "host": "0.0.0.0",
+  "vault_path": "C:/Users/hddfi/AppData/Roaming/aegis-pass/aegis_vault.json",
+  "auth_enabled": true,
+  "server_pin": "2026",
+  "session_secret": "aegis_sec_994b7e28f3a14c6d9a117b992026",
+  "max_backups": 20,
+  "app_name": "Aegis Pass Server",
+  "version": "1.0.0"
+}

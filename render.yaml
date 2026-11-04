@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: aegis-pass-server
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install
+    startCommand: node server/server.js
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: AEGIS_PIN
+        value: "2026"

@@ -1,0 +1,17 @@
+{
+  "name": "Aegis Pass - Менеджер Паролей",
+  "short_name": "Aegis Pass",
+  "description": "Защищенное хранилище паролей и кибербезопасность",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#090b10",
+  "theme_color": "#0d1117",
+  "icons": [
+    {
+      "src": "./assets/icons/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

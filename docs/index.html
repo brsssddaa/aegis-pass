@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Aegis Pass // Cloud Vault</title>
+  <meta name="theme-color" content="#090b10">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./assets/icons/icon.png" type="image/png">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Google Identity Services (GIS) SDK -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body class="theme-monochrome">
+
+  <!-- AUTH SCREEN (GOOGLE & PIN) -->
+  <div id="auth-screen" class="auth-overlay">
+    <div class="auth-box glass-panel">
+      <div class="auth-logo">
+        <svg class="shield-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+      </div>
+      <h2>AEGIS PASS</h2>
+      <p class="auth-subtitle">Облачное Zero-Knowledge хранилище</p>
+
+      <!-- Google User Badge (shown if signed in via Google) -->
+      <div id="google-user-badge" class="google-user-badge hidden">
+        <img id="google-user-avatar" class="google-user-avatar" src="" alt="Google Avatar">
+        <div class="google-user-info">
+          <span id="google-user-name" class="google-user-name">Google User</span>
+          <span id="google-user-email" class="google-user-email">user@gmail.com</span>
+        </div>
+        <button type="button" id="btn-google-signout" class="btn-text-sm" title="Сменить аккаунт Google">Выйти</button>
+      </div>
+
+      <!-- Google Sign-In Button Container -->
+      <div id="google-signin-section">
+        <button type="button" id="btn-google-login" class="btn-google">
+          <svg viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span>Войти через Google</span>
+        </button>
+        <div id="g_id_signin_hidden" style="display:none;"></div>
+      </div>
+
+      <div class="auth-divider">
+        <span>Мастер-PIN</span>
+      </div>
+
+      <!-- Master PIN / Passphrase form -->
+      <form id="pin-form" class="pin-form">
+        <label for="pin-input">Мастер-PIN для шифрования</label>
+        <div class="pin-input-wrap">
+          <input type="password" id="pin-input" maxlength="24" placeholder="PIN" autofocus autocomplete="current-password" inputmode="numeric">
+          <button type="submit" class="btn-primary" id="btn-pin-submit">Войти</button>
+        </div>
+        <p class="auth-hint">PIN по умолчанию: <b>2026</b></p>
+        <div id="auth-error" class="auth-error"></div>
+      </form>
+
+      <!-- Cloud Server Settings Toggle -->
+      <button type="button" id="btn-toggle-settings" class="cloud-settings-toggle">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Параметры облачного сервера</span>
+      </button>
+
+      <div id="cloud-settings-panel" class="cloud-settings-panel hidden">
+        <label for="server-url-input">URL Cloud Сервера (Node.js / Render / Tailscale)</label>
+        <input type="text" id="server-url-input" placeholder="Оставьте пустым для авто-выбора или укажите URL">
+        <label for="google-client-id-input">Google Client ID (OAuth)</label>
+        <input type="text" id="google-client-id-input" placeholder="348808136485-2hf1oc4n57v0m5gdoth2arb5qmvqs27m...">
+        <button type="button" id="btn-save-settings" class="btn-primary cloud-save-btn">Применить параметры</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MAIN APP CONTAINER -->
+  <div id="app-container" class="app-layout">
+    
+    <!-- TOP BAR -->
+    <header class="topbar glass-panel">
+      <div class="brand">
+        <svg class="brand-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+        <div class="brand-text">
+          <span class="brand-title">AEGIS PASS</span>
+          <span class="brand-version" id="header-cloud-mode">CLOUD SYNC</span>
+        </div>
+      </div>
+
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="search-input" placeholder="Поиск паролей, сайтов, логинов...">
+        <button id="search-clear" class="btn-icon hidden">&times;</button>
+      </div>
+
+      <div class="topbar-actions">
+        <!-- Topbar Google Account Badge -->
+        <div id="topbar-user" class="topbar-user hidden" title="Google Аккаунт">
+          <img id="topbar-avatar" class="topbar-avatar" src="" alt="Avatar">
+          <span id="topbar-username" class="topbar-username desktop-only">Аккаунт</span>
+        </div>
+
+        <div id="sync-status" class="sync-badge" title="Статус синхронизации">
+          <span class="sync-dot"></span>
+          <span class="sync-label">Синхронизировано</span>
+        </div>
+        <button id="btn-open-generator" class="btn-secondary" title="Генератор паролей">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span class="desktop-only">Генератор</span>
+        </button>
+        <button id="btn-add-item" class="btn-primary" title="Добавить запись">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span class="desktop-only">Добавить</span>
+        </button>
+        <button id="btn-lock" class="btn-icon" title="Заблокировать">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- CATEGORIES BAR -->
+    <nav class="categories-bar">
+      <button class="cat-pill active" data-cat="all">Все (<span id="count-all">0</span>)</button>
+      <button class="cat-pill" data-cat="accounts">Аккаунты (<span id="count-accounts">0</span>)</button>
+      <button class="cat-pill" data-cat="games">Игры (<span id="count-games">0</span>)</button>
+      <button class="cat-pill" data-cat="cards">Карты (<span id="count-cards">0</span>)</button>
+      <button class="cat-pill" data-cat="notes">Заметки (<span id="count-notes">0</span>)</button>
+      <button class="cat-pill" data-cat="favorites">Избранное (<span id="count-favorites">0</span>)</button>
+    </nav>
+
+    <!-- MAIN VAULT CONTENT -->
+    <main class="vault-container">
+      <div id="vault-grid" class="vault-grid">
+        <!-- Cards dynamically rendered here -->
+      </div>
+      <div id="empty-state" class="empty-state hidden">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <h3>Хранилище пусто</h3>
+        <p>Нажмите «Добавить», чтобы создать первую запись</p>
+      </div>
+    </main>
+
+    <!-- BOTTOM MOBILE NAVIGATION BAR -->
+    <div class="mobile-bottom-bar">
+      <button class="mobile-nav-item active" data-tab="vault">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Пароли</span>
+      </button>
+      <button class="mobile-nav-item" id="mobile-btn-add">
+        <div class="add-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+      </button>
+      <button class="mobile-nav-item" id="mobile-btn-gen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>Генератор</span>
+      </button>
+      <button class="mobile-nav-item" id="mobile-btn-backup">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Экспорт</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ADD / EDIT ITEM MODAL -->
+  <div id="item-modal" class="modal-overlay hidden">
+    <div class="modal-box glass-panel">
+      <div class="modal-header">
+        <h3 id="modal-title">Новая запись</h3>
+        <button id="modal-close" class="btn-icon">&times;</button>
+      </div>
+      <form id="item-form" class="modal-form">
+        <input type="hidden" id="item-id">
+        
+        <div class="form-row">
+          <label>Категория</label>
+          <div class="cat-select-row">
+            <label class="radio-cat"><input type="radio" name="item-cat" value="accounts" checked><span>Аккаунт</span></label>
+            <label class="radio-cat"><input type="radio" name="item-cat" value="games"><span>Игра</span></label>
+            <label class="radio-cat"><input type="radio" name="item-cat" value="cards"><span>Карта</span></label>
+            <label class="radio-cat"><input type="radio" name="item-cat" value="notes"><span>Заметка</span></label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="item-name">Название сервиса / Игры</label>
+          <input type="text" id="item-name" required placeholder="Discord, Steam, Email...">
+        </div>
+
+        <div class="form-group">
+          <label for="item-username">Логин / Email</label>
+          <input type="text" id="item-username" placeholder="user@mail.com или никнейм">
+        </div>
+
+        <div class="form-group">
+          <div class="label-with-action">
+            <label for="item-password">Пароль / ПИН</label>
+            <button type="button" id="btn-modal-generate" class="link-btn">Сгенерировать</button>
+          </div>
+          <div class="password-input-wrap">
+            <input type="text" id="item-password" placeholder="Пароль">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="item-url">Веб-сайт (URL)</label>
+          <input type="url" id="item-url" placeholder="https://example.com">
+        </div>
+
+        <div class="form-group">
+          <label for="item-notes">Заметки / 2FA резервные коды</label>
+          <textarea id="item-notes" rows="2" placeholder="Дополнительная информация..."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" id="modal-cancel" class="btn-secondary">Отмена</button>
+          <button type="submit" class="btn-primary" id="modal-save">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PASSWORD GENERATOR MODAL -->
+  <div id="gen-modal" class="modal-overlay hidden">
+    <div class="modal-box glass-panel">
+      <div class="modal-header">
+        <h3>Генератор безопасных паролей</h3>
+        <button id="gen-close" class="btn-icon">&times;</button>
+      </div>
+      <div class="gen-content">
+        <div class="gen-output-box">
+          <input type="text" id="gen-output" readonly value="...">
+          <button id="gen-copy" class="btn-primary">Копировать</button>
+        </div>
+        <div class="gen-strength-meter">
+          <div id="gen-strength-bar" class="strength-bar"></div>
+        </div>
+        <div class="gen-slider-group">
+          <div class="slider-header">
+            <span>Длина пароля:</span>
+            <span id="gen-length-val">20</span>
+          </div>
+          <input type="range" id="gen-length" min="8" max="64" value="20">
+        </div>
+        <div class="gen-options">
+          <label><input type="checkbox" id="gen-opt-upper" checked> Заглавные (A-Z)</label>
+          <label><input type="checkbox" id="gen-opt-lower" checked> Строчные (a-z)</label>
+          <label><input type="checkbox" id="gen-opt-digits" checked> Цифры (0-9)</label>
+          <label><input type="checkbox" id="gen-opt-symbols" checked> Спецсимволы (!@#$)</label>
+        </div>
+        <button id="gen-refresh" class="btn-secondary full-width">Сгенерировать другой</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- SCRIPTS -->
+  <script src="./crypto-vault.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

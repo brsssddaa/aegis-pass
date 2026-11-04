@@ -5,3 +5,7 @@ build/
 screenshot_running.png
 .DS_Store
 Thumbs.db
+server/backups/
+data/
+*.enc
+.env

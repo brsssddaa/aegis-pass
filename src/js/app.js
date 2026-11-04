@@ -9,20 +9,28 @@
   let themeEngine = null;
 
   let vaultItems = [];
-  let currentCategory = 'accounts'; // 'all' | 'accounts' | 'cards' | 'files' | 'addresses' | 'notes' | 'dashboard'
+  let currentCategory = 'accounts'; // 'all' | 'accounts' | 'games' | 'cards' | 'notes'
   let currentFilter = 'all'; // 'all' | 'recent' | 'favorites'
   let currentSearchQuery = '';
   let isGridView = true;
 
   let settings = {
-    theme: 'emerald',
+    theme: 'monochrome',
     activeWallpaperId: 'anime_companion.jpg',
     wallpaperOpacity: 25,
+    wallpaperBrightness: 100,
+    wallpaperFit: 'cover',
     wallpaperBlur: 10,
-    autolockTimer: 5
+    sidebarOpacity: 80,
+    cardOpacity: 70,
+    tabsOpacity: 70,
+    glassBlur: 16,
+    autolockTimer: 0,
+    uiSounds: true
   };
 
   let autolockTimeout = null;
+  let activeContextMenuId = null;
 
   // Initialize App
   document.addEventListener('DOMContentLoaded', async () => {
@@ -31,9 +39,13 @@
 
     // Load persisted settings
     if (window.aegis) {
-      const saved = await window.aegis.readSettings();
-      if (saved) {
-        settings = Object.assign(settings, saved);
+      try {
+        const saved = await window.aegis.readSettings();
+        if (saved) {
+          settings = Object.assign(settings, saved);
+        }
+      } catch (e) {
+        console.error('Failed to load settings:', e);
       }
     }
 
@@ -42,11 +54,10 @@
     setupTopBar();
     setupVaultCardActions();
     setupWallpapersManager();
-    setupAuthenticator();
-    setupSecurityCheck();
     setupGenerator();
     setupSettingsTab();
     setupModal();
+    setupContextMenu();
     setupLockScreen();
     resetInactivityTimer();
 
@@ -58,6 +69,7 @@
 
     // Load vault data immediately
     await loadInitialVault();
+    updateStorageStats();
   });
 
   async function loadInitialVault() {
@@ -90,27 +102,63 @@
           password: window.PasswordGenerator.generate({ length: 18 }),
           url: 'https://discord.com',
           notes: 'Основной аккаунт',
-          favorite: true
+          favorite: true,
+          createdAt: Date.now() - 300000
         },
         {
           id: 'demo_2',
-          title: 'Epic Games Launcher',
-          category: 'accounts',
-          username: 'genius.pro@mail.ru',
-          password: window.PasswordGenerator.generate({ length: 8 }),
-          url: 'https://epicgames.com',
-          notes: 'Игровой профиль',
-          favorite: false
+          title: 'Steam',
+          category: 'games',
+          username: 'Motewj',
+          password: window.PasswordGenerator.generate({ length: 20 }),
+          url: '',
+          notes: 'Игровая библиотека Steam',
+          favorite: true,
+          createdAt: Date.now() - 200000
         },
         {
           id: 'demo_3',
-          title: 'Steam',
-          category: 'accounts',
-          username: 'Motewj',
-          password: window.PasswordGenerator.generate({ length: 20 }),
-          url: 'https://store.steampowered.com',
-          notes: 'Игровая библиотека',
-          favorite: true
+          title: 'Roblox',
+          category: 'games',
+          username: 'Player_777',
+          password: window.PasswordGenerator.generate({ length: 16 }),
+          url: '',
+          notes: 'Основной профиль',
+          favorite: true,
+          createdAt: Date.now() - 150000
+        },
+        {
+          id: 'demo_4',
+          title: 'Dota 2',
+          category: 'games',
+          username: 'MidOrFeed',
+          password: window.PasswordGenerator.generate({ length: 14 }),
+          url: '',
+          notes: 'Рейтинговый аккаунт',
+          favorite: false,
+          createdAt: Date.now() - 100000
+        },
+        {
+          id: 'demo_5',
+          title: 'Т-Банк Black',
+          category: 'cards',
+          username: '2200 7000 1234 5678',
+          password: '12/28 · CVV 452',
+          url: '',
+          notes: 'Основная дебетовая карта',
+          favorite: false,
+          createdAt: Date.now() - 80000
+        },
+        {
+          id: 'demo_6',
+          title: 'Секретная заметка',
+          category: 'notes',
+          username: 'Личные заметки',
+          password: 'PIN 8891',
+          url: '',
+          notes: 'Коды резервного восстановления и ключи доступа к серверу',
+          favorite: false,
+          createdAt: Date.now() - 50000
         }
       ];
       await persistVaultToDisk();
@@ -121,17 +169,48 @@
 
   // Apply visual settings
   function applySettingsToUi() {
-    themeEngine.applyPalette(settings.theme || 'emerald');
+    themeEngine.applyPalette(settings.theme || 'monochrome');
+    themeEngine.sounds.enabled = settings.uiSounds !== false;
 
     // Update active swatch
     document.querySelectorAll('.kpm-swatch-circle').forEach(sw => {
       sw.classList.toggle('active', sw.getAttribute('data-color') === settings.theme);
     });
 
-    // Wallpaper layer settings
     const root = document.documentElement;
+
+    if (typeof settings.wallpaperBrightness === 'undefined') settings.wallpaperBrightness = 100;
+    if (!settings.wallpaperFit) settings.wallpaperFit = 'cover';
+
+    // Wallpaper layer settings
     root.style.setProperty('--bg-wallpaper-opacity', (settings.wallpaperOpacity / 100).toString());
     root.style.setProperty('--bg-wallpaper-blur', settings.wallpaperBlur + 'px');
+    root.style.setProperty('--bg-wallpaper-brightness', (settings.wallpaperBrightness / 100).toString());
+    root.style.setProperty('--bg-wallpaper-fit', settings.wallpaperFit);
+
+    const selFit = document.getElementById('select-wallpaper-fit');
+    if (selFit) selFit.value = settings.wallpaperFit;
+    const selFitSet = document.getElementById('select-wallpaper-fit-settings');
+    if (selFitSet) selFitSet.value = settings.wallpaperFit;
+
+    // Glass transparency & blur settings
+    root.style.setProperty('--sidebar-opacity', (settings.sidebarOpacity / 100).toString());
+    root.style.setProperty('--card-opacity', (settings.cardOpacity / 100).toString());
+    root.style.setProperty('--tabs-opacity', (settings.tabsOpacity / 100).toString());
+    root.style.setProperty('--topbar-opacity', (Math.min(100, settings.sidebarOpacity + 5) / 100).toString());
+    root.style.setProperty('--glass-blur', settings.glassBlur + 'px');
+
+    // Tabs opacity slider
+    const sTabsOp = document.getElementById('slider-tabs-opacity');
+    if (sTabsOp) sTabsOp.value = settings.tabsOpacity;
+    const vTabsOp = document.getElementById('val-tabs-opacity');
+    if (vTabsOp) vTabsOp.textContent = settings.tabsOpacity + '%';
+
+    // Wallpaper pane sliders
+    const sBright = document.getElementById('slider-bg-brightness');
+    if (sBright) sBright.value = settings.wallpaperBrightness;
+    const vBright = document.getElementById('val-bg-brightness');
+    if (vBright) vBright.textContent = settings.wallpaperBrightness + '%';
 
     const sOp = document.getElementById('slider-bg-opacity');
     if (sOp) sOp.value = settings.wallpaperOpacity;
@@ -143,8 +222,52 @@
     const vBl = document.getElementById('val-bg-blur');
     if (vBl) vBl.textContent = settings.wallpaperBlur + 'px';
 
+    const sSideOpW = document.getElementById('slider-sidebar-opacity-wallpapers');
+    if (sSideOpW) sSideOpW.value = settings.sidebarOpacity;
+    const vSideOpW = document.getElementById('val-sidebar-opacity-wallpapers');
+    if (vSideOpW) vSideOpW.textContent = settings.sidebarOpacity + '%';
+
+    const sTabsOpW = document.getElementById('slider-tabs-opacity-wallpapers');
+    if (sTabsOpW) sTabsOpW.value = settings.tabsOpacity;
+    const vTabsOpW = document.getElementById('val-tabs-opacity-wallpapers');
+    if (vTabsOpW) vTabsOpW.textContent = settings.tabsOpacity + '%';
+
+    const sCardOpW = document.getElementById('slider-card-opacity-wallpapers');
+    if (sCardOpW) sCardOpW.value = settings.cardOpacity;
+    const vCardOpW = document.getElementById('val-card-opacity-wallpapers');
+    if (vCardOpW) vCardOpW.textContent = settings.cardOpacity + '%';
+
+    // Settings appearance sliders
+    const sSideOp = document.getElementById('slider-sidebar-opacity');
+    if (sSideOp) sSideOp.value = settings.sidebarOpacity;
+    const vSideOp = document.getElementById('val-sidebar-opacity');
+    if (vSideOp) vSideOp.textContent = settings.sidebarOpacity + '%';
+
+    const sCardOp = document.getElementById('slider-card-opacity');
+    if (sCardOp) sCardOp.value = settings.cardOpacity;
+    const vCardOp = document.getElementById('val-card-opacity');
+    if (vCardOp) vCardOp.textContent = settings.cardOpacity + '%';
+
+    const sGlassBl = document.getElementById('slider-glass-blur');
+    if (sGlassBl) sGlassBl.value = settings.glassBlur;
+    const vGlassBl = document.getElementById('val-glass-blur');
+    if (vGlassBl) vGlassBl.textContent = settings.glassBlur + 'px';
+
+    const sBgOpSet = document.getElementById('slider-bg-opacity-settings');
+    if (sBgOpSet) sBgOpSet.value = settings.wallpaperOpacity;
+    const vBgOpSet = document.getElementById('val-bg-opacity-settings');
+    if (vBgOpSet) vBgOpSet.textContent = settings.wallpaperOpacity + '%';
+
+    const sBrightSet = document.getElementById('slider-bg-brightness-settings');
+    if (sBrightSet) sBrightSet.value = settings.wallpaperBrightness;
+    const vBrightSet = document.getElementById('val-bg-brightness-settings');
+    if (vBrightSet) vBrightSet.textContent = settings.wallpaperBrightness + '%';
+
     const sLock = document.getElementById('select-autolock-timer');
     if (sLock) sLock.value = settings.autolockTimer;
+
+    const checkSounds = document.getElementById('check-ui-sounds');
+    if (checkSounds) checkSounds.checked = settings.uiSounds !== false;
 
     applyWallpaperBackground(settings.activeWallpaperId);
   }
@@ -156,104 +279,109 @@
     if (!wallpaperId || wallpaperId === 'none') {
       bgImg.classList.remove('active');
       bgImg.src = '';
+      return;
+    }
+
+    // Check if it exists in discovered list
+    const found = cachedWallpapers.find(w => w.fileName === wallpaperId || w.id === wallpaperId);
+    if (found) {
+      bgImg.src = found.fileUrl;
+      bgImg.classList.add('active');
     } else {
-      // In electron, files from userData/wallpapers are file:/// URLs
-      if (window.aegis) {
-        window.aegis.listWallpapers().then(list => {
-          const found = list.find(w => w.id === wallpaperId || w.fileName === wallpaperId);
-          if (found) {
-            bgImg.src = found.fileUrl;
-            bgImg.classList.add('active');
-          } else {
-            bgImg.classList.remove('active');
-          }
-        });
-      }
+      bgImg.src = 'assets/wallpaper_anime.jpg';
+      bgImg.classList.add('active');
     }
   }
 
-  async function saveCurrentSettings() {
+  function saveCurrentSettings() {
     if (window.aegis) {
-      await window.aegis.saveSettings(settings);
+      window.aegis.saveSettings(settings);
     }
   }
 
   // ==============================================================================
-  // NAVIGATION & VIEW SWITCHER
+  // NAVIGATION & VIEW SWITCHING
   // ==============================================================================
-  const CATEGORY_NAMES = {
-    'dashboard': 'Главная',
+  function setupNavigation() {
+    // Sidebar menu items
+    document.querySelectorAll('.kpm-menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        themeEngine.sounds.playClick();
+        const viewKey = item.getAttribute('data-view');
+        switchView(viewKey);
+      });
+    });
+
+    // Wallpapers button at sidebar bottom
+    document.getElementById('btn-nav-wallpapers').addEventListener('click', () => {
+      themeEngine.sounds.playClick();
+      switchView('wallpapers');
+    });
+
+    // Settings button at sidebar bottom
+    document.getElementById('btn-nav-settings').addEventListener('click', () => {
+      themeEngine.sounds.playClick();
+      switchView('settings');
+    });
+
+    // Subtab button to jump to wallpapers from settings
+    const btnJumpWallpapers = document.getElementById('btn-jump-to-wallpapers');
+    if (btnJumpWallpapers) {
+      btnJumpWallpapers.addEventListener('click', () => {
+        themeEngine.sounds.playClick();
+        switchView('wallpapers');
+      });
+    }
+  }
+
+  const VIEW_TITLES = {
     'all': 'Все записи',
     'accounts': 'Аккаунты',
+    'games': 'Игры',
     'cards': 'Банковские карты',
-    'files': 'Файлы',
-    'addresses': 'Адреса',
     'notes': 'Заметки',
-    'authenticator': 'Аутентификатор (2FA)',
-    'passkeys': 'Ключи доступа',
-    'security-check': 'Проверка паролей',
     'generator': 'Генератор паролей',
     'wallpapers': 'Обои и Темы',
     'settings': 'Настройки'
   };
 
-  function setupNavigation() {
-    const menuItems = document.querySelectorAll('.kpm-menu-item');
-    menuItems.forEach(item => {
-      item.addEventListener('click', () => {
-        themeEngine.sounds.playClick();
-        const view = item.getAttribute('data-view');
-        switchMainView(view);
-      });
+  const ADD_BUTTON_LABELS = {
+    'all': 'Добавить запись',
+    'accounts': 'Добавить аккаунт',
+    'games': 'Добавить игру',
+    'cards': 'Добавить карту',
+    'notes': 'Добавить заметку'
+  };
+
+  function switchView(viewKey) {
+    // Update active class on menu items
+    document.querySelectorAll('.kpm-menu-item').forEach(m => {
+      m.classList.toggle('active', m.getAttribute('data-view') === viewKey);
     });
 
-    document.getElementById('btn-nav-wallpapers').addEventListener('click', () => {
-      themeEngine.sounds.playClick();
-      switchMainView('wallpapers');
-    });
+    // Bottom buttons active state
+    document.getElementById('btn-nav-wallpapers').classList.toggle('active', viewKey === 'wallpapers');
+    document.getElementById('btn-nav-settings').classList.toggle('active', viewKey === 'settings');
 
-    document.getElementById('btn-nav-settings').addEventListener('click', () => {
-      themeEngine.sounds.playClick();
-      switchMainView('settings');
-    });
-
-    document.getElementById('btn-nav-lock').addEventListener('click', () => {
-      lockVault();
-    });
-  }
-
-  function switchMainView(viewKey) {
-    // Highlight sidebar items
-    document.querySelectorAll('.kpm-menu-item').forEach(i => {
-      i.classList.toggle('active', i.getAttribute('data-view') === viewKey);
-    });
-
-    const isWallpapers = (viewKey === 'wallpapers');
-    const isSettings = (viewKey === 'settings');
-    document.getElementById('btn-nav-wallpapers').classList.toggle('active', isWallpapers);
-    document.getElementById('btn-nav-settings').classList.toggle('active', isSettings);
-
-    // Update section title in topbar
+    // Title update
     const titleEl = document.getElementById('view-title');
     if (titleEl) {
-      titleEl.textContent = CATEGORY_NAMES[viewKey] || 'Записи';
+      titleEl.textContent = VIEW_TITLES[viewKey] || 'Аккаунты';
     }
 
-    // Toggle add button text
-    const addLabel = document.getElementById('btn-add-entry-label');
+    // Toggle topbar add button and filter pills
     const addBtn = document.getElementById('btn-add-entry');
     const filterBar = document.getElementById('filter-pills-bar');
+    const addLabel = document.getElementById('btn-add-entry-label');
 
-    if (viewKey === 'wallpapers' || viewKey === 'settings' || viewKey === 'generator') {
+    if (viewKey === 'generator' || viewKey === 'wallpapers' || viewKey === 'settings') {
       if (addBtn) addBtn.style.display = 'none';
       if (filterBar) filterBar.style.display = 'none';
     } else {
       if (addBtn) addBtn.style.display = 'inline-flex';
       if (filterBar) filterBar.style.display = 'flex';
       if (addLabel) {
-        if (viewKey === 'cards') addLabel.textContent = 'Добавить карту';
-        else if (viewKey === 'notes') addLabel.textContent = 'Добавить заметку';
-        else addLabel.textContent = 'Добавить аккаунт';
+        addLabel.textContent = ADD_BUTTON_LABELS[viewKey] || 'Добавить запись';
       }
     }
 
@@ -261,16 +389,7 @@
     document.querySelectorAll('.kpm-view-pane').forEach(p => p.classList.remove('active'));
 
     // Show selected pane
-    if (viewKey === 'authenticator') {
-      document.getElementById('pane-authenticator').classList.add('active');
-      renderAuthenticatorList();
-    } else if (viewKey === 'passkeys') {
-      document.getElementById('pane-passkeys').classList.add('active');
-      renderPasskeysList();
-    } else if (viewKey === 'security-check') {
-      document.getElementById('pane-security-check').classList.add('active');
-      renderSecurityCheck();
-    } else if (viewKey === 'generator') {
+    if (viewKey === 'generator') {
       document.getElementById('pane-generator').classList.add('active');
       refreshGenerator();
     } else if (viewKey === 'wallpapers') {
@@ -278,6 +397,7 @@
       renderWallpapersGallery();
     } else if (viewKey === 'settings') {
       document.getElementById('pane-settings').classList.add('active');
+      updateStorageStats();
     } else {
       // Vault cards grid view
       currentCategory = viewKey;
@@ -363,12 +483,23 @@
     'discord': { bg: 'rgba(88,101,242,0.18)', color: '#5865F2' },
     'steam': { bg: 'rgba(23,26,33,0.3)', color: '#66c0f4' },
     'epic': { bg: 'rgba(49,49,49,0.35)', color: '#ffffff' },
+    'roblox': { bg: 'rgba(235,50,35,0.2)', color: '#ff4d4d' },
+    'minecraft': { bg: 'rgba(78,148,79,0.25)', color: '#52b788' },
+    'dota': { bg: 'rgba(180,40,40,0.22)', color: '#e63946' },
+    'cs2': { bg: 'rgba(230,126,34,0.22)', color: '#f39c12' },
+    'fortnite': { bg: 'rgba(155,89,182,0.22)', color: '#9b59b6' },
+    'war thunder': { bg: 'rgba(211,84,0,0.22)', color: '#e67e22' },
+    'genshin': { bg: 'rgba(52,152,219,0.22)', color: '#3498db' },
+    'gta': { bg: 'rgba(46,204,113,0.22)', color: '#2ecc71' },
+    'rust': { bg: 'rgba(192,57,43,0.22)', color: '#cd4632' },
+    'apex': { bg: 'rgba(231,76,60,0.22)', color: '#e74c3c' },
+    'lethal': { bg: 'rgba(243,156,18,0.22)', color: '#f1c40f' },
     'google': { bg: 'rgba(234,67,53,0.16)', color: '#ea4335' },
     'github': { bg: 'rgba(255,255,255,0.12)', color: '#ffffff' },
     'yandex': { bg: 'rgba(252,63,29,0.18)', color: '#fc3f1d' },
     'telegram': { bg: 'rgba(36,161,222,0.18)', color: '#24A1DE' },
     'vk': { bg: 'rgba(0,119,255,0.18)', color: '#0077ff' },
-    'bank': { bg: 'rgba(16,185,129,0.18)', color: '#10b981' }
+    'банк': { bg: 'rgba(16,185,129,0.18)', color: '#10b981' }
   };
 
   function getServiceColor(title) {
@@ -379,15 +510,21 @@
     return { bg: 'rgba(255,255,255,0.08)', color: '#ffffff' };
   }
 
+  const CATEGORY_NAMES = {
+    'accounts': 'Аккаунт',
+    'games': 'Игра',
+    'cards': 'Карта',
+    'notes': 'Заметка'
+  };
+
   function renderCardsGrid() {
     const container = document.getElementById('kpm-cards-container');
     if (!container) return;
 
-    // Filter items
     let items = vaultItems.slice();
 
     // 1. Category Filter
-    if (currentCategory !== 'all' && currentCategory !== 'dashboard') {
+    if (currentCategory !== 'all') {
       items = items.filter(it => it.category === currentCategory);
     }
 
@@ -412,6 +549,12 @@
     updateSidebarCounters();
 
     if (items.length === 0) {
+      let emptyMsg = 'В этой категории пока нет записей.';
+      if (currentCategory === 'games') emptyMsg = 'В категории «Игры» пока нет записей. Нажмите кнопку «Добавить игру».';
+      else if (currentCategory === 'accounts') emptyMsg = 'В категории «Аккаунты» пока нет записей. Нажмите «Добавить аккаунт».';
+      else if (currentCategory === 'cards') emptyMsg = 'В категории «Банковские карты» пока нет записей. Нажмите «Добавить карту».';
+      else if (currentCategory === 'notes') emptyMsg = 'В категории «Заметки» пока нет записей. Нажмите «Добавить заметку».';
+
       container.innerHTML = `
         <div class="kpm-empty-box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -419,7 +562,7 @@
             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
           </svg>
           <div class="kpm-empty-title">Записей не найдено</div>
-          <div class="kpm-empty-subtitle">Нажмите кнопку «Добавить аккаунт», чтобы сохранить новый пароль.</div>
+          <div class="kpm-empty-subtitle">${emptyMsg}</div>
         </div>
       `;
       return;
@@ -429,6 +572,7 @@
       const servColor = getServiceColor(item.title);
       const isWeak = !item.password || item.password.length < 10;
       const initial = (item.title || 'A').charAt(0).toUpperCase();
+      const catLabel = CATEGORY_NAMES[item.category] || 'Запись';
 
       return `
         <div class="kpm-card" data-id="${item.id}">
@@ -437,7 +581,10 @@
               <div class="kpm-service-icon" style="background: ${servColor.bg}; color: ${servColor.color};">
                 ${initial}
               </div>
-              <div class="kpm-card-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</div>
+              <div style="display: flex; flex-direction: column; overflow: hidden; min-width: 0;">
+                <div class="kpm-card-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</div>
+                <div class="kpm-card-cat-label">${catLabel}</div>
+              </div>
             </div>
             <div class="kpm-card-actions">
               <button class="kpm-card-star-btn ${item.favorite ? 'starred' : ''}" data-action="toggle-star" data-id="${item.id}" title="${item.favorite ? 'В избранном' : 'Добавить в избранное'}">
@@ -450,17 +597,19 @@
           </div>
 
           <div class="kpm-card-body">
+            <!-- Login row -->
             <div class="kpm-field-row">
-              <div class="kpm-field-mono" title="${escapeHtml(item.username)}">${escapeHtml(item.username)}</div>
-              <button class="kpm-field-copy-btn" data-action="copy-user" data-id="${item.id}" title="Скопировать логин">
+              <span class="kpm-field-val" title="${escapeHtml(item.username)}">${escapeHtml(item.username)}</span>
+              <button class="kpm-field-copy-btn" data-action="copy-login" data-id="${item.id}" title="Скопировать логин">
                 <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
               </button>
             </div>
 
+            <!-- Password row -->
             <div class="kpm-field-row">
-              <div class="kpm-field-mono kpm-pass-masked" id="pass-field-${item.id}">••••••••••••••••</div>
+              <span class="kpm-field-val monospace" id="pass-field-${item.id}">••••••••</span>
               <div class="kpm-field-buttons">
-                <button class="kpm-field-reveal-btn" data-action="reveal-pass" data-id="${item.id}" title="Показать пароль">
+                <button class="kpm-field-copy-btn" data-action="reveal-pass" data-id="${item.id}" title="Показать/скрыть пароль">
                   <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
                 <button class="kpm-field-copy-btn" data-action="copy-pass" data-id="${item.id}" title="Скопировать пароль">
@@ -470,45 +619,52 @@
             </div>
           </div>
 
-          <div class="kpm-card-footer">
-            ${isWeak ? `
-              <div class="kpm-card-status warning">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <span>Проблемы с паролем</span>
+          <!-- Status indicator (only if weak) -->
+          ${isWeak ? `
+            <div class="kpm-card-footer">
+              <div class="kpm-status-alert">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>Короткий</span>
               </div>
-            ` : `
-              <div class="kpm-card-status good">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                <span>Криптостойкий</span>
-              </div>
-            `}
-          </div>
+            </div>
+          ` : ''}
         </div>
       `;
     }).join('');
   }
 
   function updateSidebarCounters() {
-    const badgeAll = document.getElementById('badge-count-all');
-    if (badgeAll) badgeAll.textContent = vaultItems.length;
+    const totalAll = vaultItems.length;
+    const countAccounts = vaultItems.filter(i => i.category === 'accounts').length;
+    const countGames = vaultItems.filter(i => i.category === 'games').length;
+    const countCards = vaultItems.filter(i => i.category === 'cards').length;
+    const countNotes = vaultItems.filter(i => i.category === 'notes').length;
 
-    const badgeAcc = document.getElementById('badge-count-accounts');
-    if (badgeAcc) badgeAcc.textContent = vaultItems.filter(i => i.category === 'accounts').length;
+    const bAll = document.getElementById('badge-count-all');
+    if (bAll) bAll.textContent = totalAll;
 
-    const badgeCards = document.getElementById('badge-count-cards');
-    if (badgeCards) badgeCards.textContent = vaultItems.filter(i => i.category === 'cards').length;
+    const bAcc = document.getElementById('badge-count-accounts');
+    if (bAcc) bAcc.textContent = countAccounts;
 
-    // Security alert dot if any weak password exists
-    const hasWeak = vaultItems.some(i => !i.password || i.password.length < 10);
-    const dot = document.getElementById('dot-security-alert');
-    if (dot) dot.style.display = hasWeak ? 'inline-block' : 'none';
+    const bGames = document.getElementById('badge-count-games');
+    if (bGames) bGames.textContent = countGames;
+
+    const bCards = document.getElementById('badge-count-cards');
+    if (bCards) bCards.textContent = countCards;
+
+    const bNotes = document.getElementById('badge-count-notes');
+    if (bNotes) bNotes.textContent = countNotes;
   }
 
-  // Card Event Delegations
+  // ==============================================================================
+  // CARD ACTIONS (COPY, STAR, REVEAL, MENU)
+  // ==============================================================================
   function setupVaultCardActions() {
     const container = document.getElementById('kpm-cards-container');
-    container.addEventListener('click', async (e) => {
-      const btn = e.target.closest('button');
+    if (!container) return;
+
+    container.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action]');
       if (!btn) return;
 
       const action = btn.getAttribute('data-action');
@@ -516,34 +672,28 @@
       const item = vaultItems.find(it => it.id === id);
       if (!item) return;
 
-      // 1. Star / Favorite Toggle
+      // 1. Toggle Favorite
       if (action === 'toggle-star') {
         themeEngine.sounds.playClick();
         item.favorite = !item.favorite;
-        await persistVaultToDisk();
+        persistVaultToDisk();
         renderCardsGrid();
         showToast(item.favorite ? 'Добавлено в избранное' : 'Удалено из избранного');
       }
 
-      // 2. Copy Username
-      else if (action === 'copy-user') {
+      // 2. Copy Login
+      else if (action === 'copy-login') {
         themeEngine.sounds.playCopy();
-        if (window.aegis) {
-          window.aegis.copyText(item.username);
-        } else {
-          navigator.clipboard.writeText(item.username);
-        }
+        if (window.aegis) window.aegis.copyText(item.username);
+        else navigator.clipboard.writeText(item.username);
         showToast('Логин скопирован');
       }
 
       // 3. Copy Password
       else if (action === 'copy-pass') {
         themeEngine.sounds.playCopy();
-        if (window.aegis) {
-          window.aegis.copyText(item.password);
-        } else {
-          navigator.clipboard.writeText(item.password);
-        }
+        if (window.aegis) window.aegis.copyText(item.password);
+        else navigator.clipboard.writeText(item.password);
         showToast('Пароль скопирован');
       }
 
@@ -554,7 +704,7 @@
         if (passEl) {
           if (passEl.classList.contains('revealed')) {
             passEl.classList.remove('revealed');
-            passEl.textContent = '••••••••••••••••';
+            passEl.textContent = '••••••••';
           } else {
             passEl.classList.add('revealed');
             passEl.textContent = item.password;
@@ -562,16 +712,88 @@
         }
       }
 
-      // 5. Card Menu (Edit / Delete)
+      // 5. Card Menu (Context popover)
       else if (action === 'card-menu') {
         themeEngine.sounds.playClick();
-        openEditModal(item);
+        showContextMenuForCard(btn, item);
       }
     });
   }
 
+  // Context Menu for Cards
+  function setupContextMenu() {
+    const menu = document.getElementById('card-context-menu');
+    if (!menu) return;
+
+    menu.addEventListener('click', async (e) => {
+      const itemEl = e.target.closest('.kpm-dropdown-item');
+      if (!itemEl) return;
+
+      const action = itemEl.getAttribute('data-action');
+      const item = vaultItems.find(it => it.id === activeContextMenuId);
+      hideContextMenu();
+
+      if (!item) return;
+
+      if (action === 'edit') {
+        themeEngine.sounds.playClick();
+        openEditModal(item);
+      } else if (action === 'copy-login') {
+        themeEngine.sounds.playCopy();
+        if (window.aegis) window.aegis.copyText(item.username);
+        else navigator.clipboard.writeText(item.username);
+        showToast('Логин скопирован');
+      } else if (action === 'copy-password') {
+        themeEngine.sounds.playCopy();
+        if (window.aegis) window.aegis.copyText(item.password);
+        else navigator.clipboard.writeText(item.password);
+        showToast('Пароль скопирован');
+      } else if (action === 'delete') {
+        themeEngine.sounds.playError();
+        vaultItems = vaultItems.filter(it => it.id !== item.id);
+        await persistVaultToDisk();
+        renderCardsGrid();
+        updateStorageStats();
+        showToast('Запись удалена');
+      }
+    });
+
+    // Close on click outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#card-context-menu') && !e.target.closest('[data-action="card-menu"]')) {
+        hideContextMenu();
+      }
+    });
+  }
+
+  function showContextMenuForCard(buttonEl, item) {
+    const menu = document.getElementById('card-context-menu');
+    if (!menu) return;
+
+    activeContextMenuId = item.id;
+    const rect = buttonEl.getBoundingClientRect();
+
+    let top = rect.bottom + 4;
+    let left = rect.right - 170;
+
+    if (left < 10) left = 10;
+    if (top + 160 > window.innerHeight) {
+      top = rect.top - 150;
+    }
+
+    menu.style.top = top + 'px';
+    menu.style.left = left + 'px';
+    menu.style.display = 'flex';
+  }
+
+  function hideContextMenu() {
+    const menu = document.getElementById('card-context-menu');
+    if (menu) menu.style.display = 'none';
+    activeContextMenuId = null;
+  }
+
   // ==============================================================================
-  // WALLPAPERS & PROFILES MANAGER (like in C:\Scripts\minecraft-ai-bot)
+  // WALLPAPERS & PROFILES MANAGER
   // ==============================================================================
   let cachedWallpapers = [];
 
@@ -619,12 +841,17 @@
       showToast('Фон сброшен');
     });
 
-    // Sliders
+    // Sliders in Wallpapers Pane
     const sliderOp = document.getElementById('slider-bg-opacity');
     sliderOp.addEventListener('input', (e) => {
       const val = parseInt(e.target.value, 10);
       settings.wallpaperOpacity = val;
       document.getElementById('val-bg-opacity').textContent = val + '%';
+      const sBgSet = document.getElementById('slider-bg-opacity-settings');
+      if (sBgSet) sBgSet.value = val;
+      const vBgSet = document.getElementById('val-bg-opacity-settings');
+      if (vBgSet) vBgSet.textContent = val + '%';
+
       document.documentElement.style.setProperty('--bg-wallpaper-opacity', (val / 100).toString());
       saveCurrentSettings();
     });
@@ -638,13 +865,99 @@
       saveCurrentSettings();
     });
 
-    // Color Swatches (without names)
+    // Scaling Mode in Wallpapers Pane
+    const selFitW = document.getElementById('select-wallpaper-fit');
+    if (selFitW) {
+      selFitW.addEventListener('change', (e) => {
+        const val = e.target.value;
+        settings.wallpaperFit = val;
+        const selFitSet = document.getElementById('select-wallpaper-fit-settings');
+        if (selFitSet) selFitSet.value = val;
+        document.documentElement.style.setProperty('--bg-wallpaper-fit', val);
+        saveCurrentSettings();
+      });
+    }
+
+    // Brightness Slider in Wallpapers Pane
+    const sliderBright = document.getElementById('slider-bg-brightness');
+    if (sliderBright) {
+      sliderBright.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        settings.wallpaperBrightness = val;
+        const vEl = document.getElementById('val-bg-brightness');
+        if (vEl) vEl.textContent = val + '%';
+        const sBrightSet = document.getElementById('slider-bg-brightness-settings');
+        if (sBrightSet) sBrightSet.value = val;
+        const vBrightSet = document.getElementById('val-bg-brightness-settings');
+        if (vBrightSet) vBrightSet.textContent = val + '%';
+
+        document.documentElement.style.setProperty('--bg-wallpaper-brightness', (val / 100).toString());
+        saveCurrentSettings();
+      });
+    }
+
+    // Sidebar Opacity Slider in Wallpapers Pane
+    const sliderSideW = document.getElementById('slider-sidebar-opacity-wallpapers');
+    if (sliderSideW) {
+      sliderSideW.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        settings.sidebarOpacity = val;
+        const vEl = document.getElementById('val-sidebar-opacity-wallpapers');
+        if (vEl) vEl.textContent = val + '%';
+        const sSide = document.getElementById('slider-sidebar-opacity');
+        if (sSide) sSide.value = val;
+        const vSide = document.getElementById('val-sidebar-opacity');
+        if (vSide) vSide.textContent = val + '%';
+
+        document.documentElement.style.setProperty('--sidebar-opacity', (val / 100).toString());
+        document.documentElement.style.setProperty('--topbar-opacity', (Math.min(100, val + 5) / 100).toString());
+        saveCurrentSettings();
+      });
+    }
+
+    // Tabs & Panels Opacity Slider in Wallpapers Pane
+    const sliderTabsW = document.getElementById('slider-tabs-opacity-wallpapers');
+    if (sliderTabsW) {
+      sliderTabsW.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        settings.tabsOpacity = val;
+        const vEl = document.getElementById('val-tabs-opacity-wallpapers');
+        if (vEl) vEl.textContent = val + '%';
+        const sTabs = document.getElementById('slider-tabs-opacity');
+        if (sTabs) sTabs.value = val;
+        const vTabs = document.getElementById('val-tabs-opacity');
+        if (vTabs) vTabs.textContent = val + '%';
+
+        document.documentElement.style.setProperty('--tabs-opacity', (val / 100).toString());
+        saveCurrentSettings();
+      });
+    }
+
+    // Card Opacity Slider in Wallpapers Pane
+    const sliderCardW = document.getElementById('slider-card-opacity-wallpapers');
+    if (sliderCardW) {
+      sliderCardW.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        settings.cardOpacity = val;
+        const vEl = document.getElementById('val-card-opacity-wallpapers');
+        if (vEl) vEl.textContent = val + '%';
+        const sCard = document.getElementById('slider-card-opacity');
+        if (sCard) sCard.value = val;
+        const vCard = document.getElementById('val-card-opacity');
+        if (vCard) vCard.textContent = val + '%';
+
+        document.documentElement.style.setProperty('--card-opacity', (val / 100).toString());
+        saveCurrentSettings();
+      });
+    }
+
+    // Color Swatches in Wallpapers Pane and Settings
     document.querySelectorAll('.kpm-swatch-circle').forEach(sw => {
       sw.addEventListener('click', () => {
         themeEngine.sounds.playClick();
         const colorKey = sw.getAttribute('data-color');
         document.querySelectorAll('.kpm-swatch-circle').forEach(s => s.classList.remove('active'));
-        sw.classList.add('active');
+        document.querySelectorAll(`.kpm-swatch-circle[data-color="${colorKey}"]`).forEach(s => s.classList.add('active'));
         settings.theme = colorKey;
         themeEngine.applyPalette(colorKey);
         saveCurrentSettings();
@@ -704,163 +1017,6 @@
   }
 
   // ==============================================================================
-  // COOL EXTRA: 2FA AUTHENTICATOR (TOTP SIMULATOR)
-  // ==============================================================================
-  let totpInterval = null;
-  const DEMO_TOTP = [
-    { id: 'totp_1', service: 'Discord', account: 'hddfi@yandex.ru', secret: 'JBSWY3DPEHPK3PXP' },
-    { id: 'totp_2', service: 'Steam Guard', account: 'Motewj', secret: 'KRSXG5CTMVRXEZLU' },
-    { id: 'totp_3', service: 'GitHub', account: 'brsssddaa', secret: 'MZXW633PN5XW6MZX' },
-    { id: 'totp_4', service: 'Epic Games', account: 'genius.pro@mail.ru', secret: 'NBSWY3DPEHPK3PXP' }
-  ];
-
-  function setupAuthenticator() {
-    if (totpInterval) clearInterval(totpInterval);
-    totpInterval = setInterval(() => {
-      updateTotpTimer();
-    }, 1000);
-  }
-
-  function getPseudoTotp(secret, epoch30) {
-    let hash = 0;
-    const str = secret + epoch30;
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash * 31 + str.charCodeAt(i)) & 0xffffffff;
-    }
-    const code = Math.abs(hash % 1000000).toString().padStart(6, '0');
-    return `${code.slice(0, 3)} ${code.slice(3)}`;
-  }
-
-  function updateTotpTimer() {
-    const epochSec = Math.floor(Date.now() / 1000);
-    const remaining = 30 - (epochSec % 30);
-    const epochStep = Math.floor(epochSec / 30);
-
-    document.querySelectorAll('.kpm-totp-timer').forEach(el => {
-      el.textContent = remaining;
-    });
-
-    document.querySelectorAll('.kpm-totp-code').forEach(el => {
-      const secret = el.getAttribute('data-secret');
-      if (secret) {
-        el.textContent = getPseudoTotp(secret, epochStep);
-      }
-    });
-  }
-
-  function renderAuthenticatorList() {
-    const list = document.getElementById('kpm-totp-list');
-    if (!list) return;
-
-    const epochSec = Math.floor(Date.now() / 1000);
-    const remaining = 30 - (epochSec % 30);
-    const epochStep = Math.floor(epochSec / 30);
-
-    list.innerHTML = DEMO_TOTP.map(t => `
-      <div class="kpm-totp-card">
-        <div>
-          <div style="font-weight: 700; font-size: 14.5px; color: #fff;">${t.service}</div>
-          <div style="font-size: 12px; color: var(--text-dim); margin-top: 2px;">${t.account}</div>
-          <div class="kpm-totp-code" data-secret="${t.secret}" style="margin-top: 8px;">
-            ${getPseudoTotp(t.secret, epochStep)}
-          </div>
-        </div>
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div class="kpm-totp-timer">${remaining}</div>
-          <button class="kpm-btn-secondary btn-copy-totp" data-secret="${t.secret}">Скопировать код</button>
-        </div>
-      </div>
-    `).join('');
-
-    list.querySelectorAll('.btn-copy-totp').forEach(btn => {
-      btn.addEventListener('click', () => {
-        themeEngine.sounds.playCopy();
-        const sec = btn.getAttribute('data-secret');
-        const epoch = Math.floor(Math.floor(Date.now() / 1000) / 30);
-        const code = getPseudoTotp(sec, epoch).replace(/\s/g, '');
-        if (window.aegis) window.aegis.copyText(code);
-        else navigator.clipboard.writeText(code);
-        showToast('Код 2FA скопирован');
-      });
-    });
-  }
-
-  // ==============================================================================
-  // COOL EXTRA: PASSKEYS LIST
-  // ==============================================================================
-  const DEMO_PASSKEYS = [
-    { title: 'Google Account', user: 'MatveYchampege138@gmail.com', type: 'Windows Hello / TPM 2.0', created: '14.10.2026' },
-    { title: 'GitHub Security', user: 'brsssddaa', type: 'FIDO2 Security Key', created: '20.09.2026' },
-    { title: 'Microsoft Account', user: 'hddfi@live.com', type: 'Passkey PIN Auth', created: '02.11.2026' }
-  ];
-
-  function renderPasskeysList() {
-    const list = document.getElementById('kpm-passkeys-list');
-    if (!list) return;
-
-    list.innerHTML = DEMO_PASSKEYS.map(pk => `
-      <div class="kpm-field-row" style="padding: 14px 18px; margin-bottom: 10px;">
-        <div>
-          <div style="font-weight: 700; color: #fff; font-size: 14px;">${pk.title}</div>
-          <div style="font-size: 12px; color: var(--text-dim); margin-top: 2px;">${pk.user} · ${pk.type}</div>
-        </div>
-        <span style="font-size: 11px; font-weight: 700; color: var(--accent-light); background: rgba(0,214,143,0.12); padding: 4px 10px; border-radius: 12px;">Активен</span>
-      </div>
-    `).join('');
-  }
-
-  // ==============================================================================
-  // SECURITY CHECK
-  // ==============================================================================
-  function renderSecurityCheck() {
-    const container = document.getElementById('security-issues-list');
-    const badge = document.getElementById('security-score-badge');
-    if (!container) return;
-
-    const weakItems = vaultItems.filter(i => !i.password || i.password.length < 10);
-    const total = vaultItems.length;
-    const score = total === 0 ? 100 : Math.round(((total - weakItems.length) / total) * 100);
-
-    if (badge) badge.textContent = `${score}%`;
-
-    if (weakItems.length === 0) {
-      container.innerHTML = `
-        <div style="text-align: center; padding: 30px; color: var(--accent-primary);">
-          <div style="font-size: 16px; font-weight: 700; margin-bottom: 6px;">Все пароли надежны</div>
-          <div style="font-size: 12.5px; color: var(--text-dim);">Никаких уязвимых паролей в базе не обнаружено.</div>
-        </div>
-      `;
-      return;
-    }
-
-    container.innerHTML = weakItems.map(it => `
-      <div class="kpm-field-row" style="padding: 12px 16px; margin-bottom: 10px;">
-        <div>
-          <div style="font-weight: 700; color: #fff;">${escapeHtml(it.title)}</div>
-          <div style="font-size: 12px; color: var(--color-danger); margin-top: 2px;">Пароль короче 10 символов</div>
-        </div>
-        <button class="kpm-btn-primary btn-fix-pass" data-id="${it.id}" style="padding: 5px 12px; font-size: 12px;">
-          Сгенерировать надежный
-        </button>
-      </div>
-    `).join('');
-
-    container.querySelectorAll('.btn-fix-pass').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        themeEngine.sounds.playSuccess();
-        const id = btn.getAttribute('data-id');
-        const item = vaultItems.find(i => i.id === id);
-        if (item) {
-          item.password = window.PasswordGenerator.generate({ length: 20 });
-          await persistVaultToDisk();
-          renderSecurityCheck();
-          showToast('Пароль обновлен на криптостойкий');
-        }
-      });
-    });
-  }
-
-  // ==============================================================================
   // GENERATOR
   // ==============================================================================
   function setupGenerator() {
@@ -911,37 +1067,167 @@
   }
 
   // ==============================================================================
-  // SETTINGS & BACKUP
+  // SETTINGS TAB WITH BEAUTIFUL SUBTABS & TRANSPARENCY CONTROLS
   // ==============================================================================
   function setupSettingsTab() {
+    // Subtabs switcher
+    document.querySelectorAll('.kpm-subtab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        themeEngine.sounds.playClick();
+        const targetSubtab = btn.getAttribute('data-subtab');
+        document.querySelectorAll('.kpm-subtab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        document.querySelectorAll('.kpm-subtab-pane').forEach(p => p.classList.remove('active'));
+        const pane = document.getElementById(`subtab-pane-${targetSubtab}`);
+        if (pane) pane.classList.add('active');
+
+        if (targetSubtab === 'settings-storage') {
+          updateStorageStats();
+        }
+      });
+    });
+
+    // Tabs & panes opacity slider
+    const sTabsOp = document.getElementById('slider-tabs-opacity');
+    if (sTabsOp) {
+      sTabsOp.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        settings.tabsOpacity = val;
+        const vTabsOp = document.getElementById('val-tabs-opacity');
+        if (vTabsOp) vTabsOp.textContent = val + '%';
+        const sTabsW = document.getElementById('slider-tabs-opacity-wallpapers');
+        if (sTabsW) sTabsW.value = val;
+        const vTabsW = document.getElementById('val-tabs-opacity-wallpapers');
+        if (vTabsW) vTabsW.textContent = val + '%';
+
+        document.documentElement.style.setProperty('--tabs-opacity', (val / 100).toString());
+        saveCurrentSettings();
+      });
+    }
+
+    // Sidebar opacity slider
+    const sSideOp = document.getElementById('slider-sidebar-opacity');
+    if (sSideOp) {
+      sSideOp.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        settings.sidebarOpacity = val;
+        const vSideOp = document.getElementById('val-sidebar-opacity');
+        if (vSideOp) vSideOp.textContent = val + '%';
+        const sSideW = document.getElementById('slider-sidebar-opacity-wallpapers');
+        if (sSideW) sSideW.value = val;
+        const vSideW = document.getElementById('val-sidebar-opacity-wallpapers');
+        if (vSideW) vSideW.textContent = val + '%';
+
+        document.documentElement.style.setProperty('--sidebar-opacity', (val / 100).toString());
+        document.documentElement.style.setProperty('--topbar-opacity', (Math.min(100, val + 5) / 100).toString());
+        saveCurrentSettings();
+      });
+    }
+
+    // Card opacity slider
+    const sCardOp = document.getElementById('slider-card-opacity');
+    if (sCardOp) {
+      sCardOp.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        settings.cardOpacity = val;
+        const vCardOp = document.getElementById('val-card-opacity');
+        if (vCardOp) vCardOp.textContent = val + '%';
+        const sCardW = document.getElementById('slider-card-opacity-wallpapers');
+        if (sCardW) sCardW.value = val;
+        const vCardW = document.getElementById('val-card-opacity-wallpapers');
+        if (vCardW) vCardW.textContent = val + '%';
+
+        document.documentElement.style.setProperty('--card-opacity', (val / 100).toString());
+        saveCurrentSettings();
+      });
+    }
+
+    // Glass blur slider
+    const sGlassBl = document.getElementById('slider-glass-blur');
+    if (sGlassBl) {
+      sGlassBl.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        settings.glassBlur = val;
+        document.getElementById('val-glass-blur').textContent = val + 'px';
+        document.documentElement.style.setProperty('--glass-blur', val + 'px');
+        saveCurrentSettings();
+      });
+    }
+
+    // Wallpaper opacity slider in settings
+    const sBgOpSet = document.getElementById('slider-bg-opacity-settings');
+    if (sBgOpSet) {
+      sBgOpSet.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        settings.wallpaperOpacity = val;
+        document.getElementById('val-bg-opacity-settings').textContent = val + '%';
+        const sBg = document.getElementById('slider-bg-opacity');
+        if (sBg) sBg.value = val;
+        const vBg = document.getElementById('val-bg-opacity');
+        if (vBg) vBg.textContent = val + '%';
+
+        document.documentElement.style.setProperty('--bg-wallpaper-opacity', (val / 100).toString());
+        saveCurrentSettings();
+      });
+    }
+
+    // Wallpaper brightness slider in settings
+    const sBrightSet = document.getElementById('slider-bg-brightness-settings');
+    if (sBrightSet) {
+      sBrightSet.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        settings.wallpaperBrightness = val;
+        document.getElementById('val-bg-brightness-settings').textContent = val + '%';
+        const sBrightW = document.getElementById('slider-bg-brightness');
+        if (sBrightW) sBrightW.value = val;
+        const vBrightW = document.getElementById('val-bg-brightness');
+        if (vBrightW) vBrightW.textContent = val + '%';
+
+        document.documentElement.style.setProperty('--bg-wallpaper-brightness', (val / 100).toString());
+        saveCurrentSettings();
+      });
+    }
+
+    // Wallpaper Scaling Mode in Settings
+    const selFitSet = document.getElementById('select-wallpaper-fit-settings');
+    if (selFitSet) {
+      selFitSet.addEventListener('change', (e) => {
+        const val = e.target.value;
+        settings.wallpaperFit = val;
+        const selFitW = document.getElementById('select-wallpaper-fit');
+        if (selFitW) selFitW.value = val;
+        document.documentElement.style.setProperty('--bg-wallpaper-fit', val);
+        saveCurrentSettings();
+      });
+    }
+
+    // UI Sounds checkbox
+    const checkSounds = document.getElementById('check-ui-sounds');
+    if (checkSounds) {
+      checkSounds.addEventListener('change', (e) => {
+        settings.uiSounds = e.target.checked;
+        themeEngine.sounds.enabled = settings.uiSounds;
+        saveCurrentSettings();
+        showToast(settings.uiSounds ? 'Звуки включены' : 'Звуки выключены');
+      });
+    }
+
     // Autolock timer
     const selectTimer = document.getElementById('select-autolock-timer');
-    selectTimer.addEventListener('change', (e) => {
-      settings.autolockTimer = parseInt(e.target.value, 10);
-      saveCurrentSettings();
-      resetInactivityTimer();
-      showToast('Настройки сохранены');
-    });
-
-    // Change Master Password
-    document.getElementById('form-change-master').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const input = document.getElementById('input-new-master');
-      const newPass = input.value;
-      if (newPass.length < 8) {
-        showToast('Пароль должен содержать минимум 8 символов');
-        return;
-      }
-
-      await vaultEngine.initNewVault(newPass);
-      await persistVaultToDisk();
-      input.value = '';
-      showToast('Мастер-пароль успешно изменен');
-    });
+    if (selectTimer) {
+      selectTimer.addEventListener('change', (e) => {
+        settings.autolockTimer = parseInt(e.target.value, 10);
+        saveCurrentSettings();
+        resetInactivityTimer();
+        showToast('Параметры автоблокировки сохранены');
+      });
+    }
 
     // Export Backup
     document.getElementById('btn-export-backup').addEventListener('click', async () => {
       if (!window.aegis) return;
+      themeEngine.sounds.playClick();
       const rawEnc = await window.aegis.readVault();
       if (!rawEnc) {
         showToast('Хранилище пусто');
@@ -950,32 +1236,90 @@
       const blob = new Blob([rawEnc], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `aegis_vault_backup_${Date.now()}.aegis`;
+      a.download = `aegis_vault_backup_${Date.now()}.json`;
       a.click();
-      showToast('Зашифрованная резервная копия выгружена');
+      showToast('Резервная копия сохранена');
     });
 
     // Import Backup
     document.getElementById('btn-import-backup').addEventListener('click', () => {
+      themeEngine.sounds.playClick();
       const inp = document.createElement('input');
       inp.type = 'file';
-      inp.accept = '.aegis,.json';
+      inp.accept = '.json,.aegis';
       inp.onchange = async (ev) => {
         const file = ev.target.files[0];
         if (!file) return;
-        const text = await file.text();
-        if (window.aegis) {
-          await window.aegis.saveVault(text);
-          showToast('База импортирована. Выполните вход.');
-          lockVault();
+        try {
+          const text = await file.text();
+          const parsed = JSON.parse(text);
+          let itemsToSet = [];
+          if (Array.isArray(parsed)) itemsToSet = parsed;
+          else if (parsed && Array.isArray(parsed.items)) itemsToSet = parsed.items;
+
+          if (itemsToSet.length > 0) {
+            vaultItems = itemsToSet;
+            await persistVaultToDisk();
+            renderCardsGrid();
+            updateStorageStats();
+            showToast('База данных успешно импортирована');
+          } else {
+            showToast('Файл не содержит корректных записей');
+          }
+        } catch (err) {
+          showToast('Ошибка при чтении файла');
         }
       };
       inp.click();
     });
+
+    // Open Web Vault Server in browser
+    const btnOpenServerWeb = document.getElementById('btn-open-server-web');
+    if (btnOpenServerWeb) {
+      btnOpenServerWeb.addEventListener('click', () => {
+        if (themeEngine && themeEngine.sounds) themeEngine.sounds.playClick();
+        if (window.aegis && window.aegis.openExternal) {
+          window.aegis.openExternal('http://127.0.0.1:8088');
+        } else {
+          window.open('http://127.0.0.1:8088', '_blank');
+        }
+      });
+    }
+  }
+
+  async function updateStorageStats() {
+    const total = vaultItems.length;
+    const games = vaultItems.filter(i => i.category === 'games').length;
+    const accounts = vaultItems.filter(i => i.category === 'accounts').length;
+    const cards = vaultItems.filter(i => i.category === 'cards').length;
+    const notes = vaultItems.filter(i => i.category === 'notes').length;
+
+    const sTotal = document.getElementById('stat-total-items');
+    if (sTotal) sTotal.textContent = total;
+    const sGames = document.getElementById('stat-games-items');
+    if (sGames) sGames.textContent = games;
+    const sAcc = document.getElementById('stat-accounts-items');
+    if (sAcc) sAcc.textContent = accounts;
+    const sCards = document.getElementById('stat-cards-items');
+    if (sCards) sCards.textContent = cards;
+    const sNotes = document.getElementById('stat-notes-items');
+    if (sNotes) sNotes.textContent = notes;
+
+    if (window.aegis && window.aegis.getStorageInfo) {
+      try {
+        const info = await window.aegis.getStorageInfo();
+        if (info.ok) {
+          const sPath = document.getElementById('storage-file-path');
+          if (sPath) sPath.textContent = info.path;
+          const sSize = document.getElementById('stat-storage-size');
+          if (sSize) sSize.textContent = info.sizeFormatted;
+        }
+      } catch (e) {}
+    }
   }
 
   // ==============================================================================
-  // MODAL WINDOW (ADD / EDIT ENTRY)
+  // MODAL WINDOW (ADD / EDIT ENTRY & PC GAME PICKER)
   // ==============================================================================
   function setupModal() {
     const modal = document.getElementById('item-modal');
@@ -983,6 +1327,7 @@
     const btnCancel = document.getElementById('btn-form-cancel');
     const btnClose = document.getElementById('btn-modal-close');
     const btnGenPass = document.getElementById('btn-form-gen-pass');
+    const btnSelectExe = document.getElementById('btn-select-game-exe');
 
     const closeModal = () => {
       modal.classList.remove('active');
@@ -992,23 +1337,68 @@
     btnCancel.addEventListener('click', closeModal);
     btnClose.addEventListener('click', closeModal);
 
+    // Escape key closes modal
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.classList.contains('active')) {
+        closeModal();
+      }
+    });
+
+    // Clicking overlay backdrop closes modal
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
     btnGenPass.addEventListener('click', () => {
       themeEngine.sounds.playClick();
       const pass = window.PasswordGenerator.generate({ length: 18 });
       document.getElementById('form-password').value = pass;
     });
 
+    // Select game executable (.exe / .lnk) from disk
+    if (btnSelectExe) {
+      btnSelectExe.addEventListener('click', async () => {
+        themeEngine.sounds.playClick();
+        if (window.aegis && window.aegis.selectGameExe) {
+          const res = await window.aegis.selectGameExe();
+          if (res.ok && res.name) {
+            document.getElementById('form-title').value = res.name;
+            showToast('Выбрана игра: ' + res.name);
+          }
+        }
+      });
+    }
+
+    // Popular game chips
+    document.querySelectorAll('.kpm-game-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        themeEngine.sounds.playClick();
+        const title = chip.getAttribute('data-title');
+        document.getElementById('form-title').value = title;
+        showToast('Выбрана игра: ' + title);
+      });
+    });
+
+    // Form submission
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      themeEngine.sounds.playSuccess();
 
       const editId = document.getElementById('form-item-id').value;
       const title = document.getElementById('form-title').value.trim();
-      const category = document.getElementById('form-category').value;
+      const category = document.getElementById('form-item-category').value || 'accounts';
       const username = document.getElementById('form-username').value.trim();
       const password = document.getElementById('form-password').value;
       const url = document.getElementById('form-url').value.trim();
       const notes = document.getElementById('form-notes').value.trim();
+
+      if (!title || !username) {
+        showToast('Заполните обязательные поля');
+        return;
+      }
+
+      themeEngine.sounds.playSuccess();
 
       if (editId) {
         const idx = vaultItems.findIndex(it => it.id === editId);
@@ -1026,33 +1416,102 @@
           createdAt: Date.now()
         };
         vaultItems.unshift(newItem);
-        showToast('Аккаунт добавлен');
+        showToast('Запись сохранена');
       }
 
       await persistVaultToDisk();
       closeModal();
       renderCardsGrid();
+      updateStorageStats();
     });
   }
 
   function openAddModal() {
+    const modal = document.getElementById('item-modal');
+    const form = document.getElementById('item-form');
+    form.reset();
+
     document.getElementById('form-item-id').value = '';
     document.getElementById('modal-heading-text').textContent = 'Новая запись';
-    document.getElementById('item-form').reset();
-    document.getElementById('form-category').value = currentCategory === 'all' ? 'accounts' : currentCategory;
-    document.getElementById('item-modal').classList.add('active');
+
+    // Target category is determined by the current view tab
+    let targetCategory = (currentCategory === 'all') ? 'accounts' : currentCategory;
+    configureModalForCategory(targetCategory);
+
+    modal.classList.add('active');
+    setTimeout(() => {
+      document.getElementById('form-title').focus();
+    }, 50);
   }
 
   function openEditModal(item) {
+    const modal = document.getElementById('item-modal');
+    document.getElementById('item-form').reset();
+
     document.getElementById('form-item-id').value = item.id;
     document.getElementById('modal-heading-text').textContent = 'Редактировать запись';
+
+    configureModalForCategory(item.category || 'accounts');
+
     document.getElementById('form-title').value = item.title || '';
-    document.getElementById('form-category').value = item.category || 'accounts';
     document.getElementById('form-username').value = item.username || '';
     document.getElementById('form-password').value = item.password || '';
     document.getElementById('form-url').value = item.url || '';
     document.getElementById('form-notes').value = item.notes || '';
-    document.getElementById('item-modal').classList.add('active');
+
+    modal.classList.add('active');
+  }
+
+  function configureModalForCategory(cat) {
+    document.getElementById('form-item-category').value = cat;
+
+    const badge = document.getElementById('modal-category-badge');
+    const gameHelper = document.getElementById('modal-game-helper');
+    const groupUrl = document.getElementById('group-form-url');
+    const labelTitle = document.getElementById('label-form-title');
+    const inputTitle = document.getElementById('form-title');
+    const labelUser = document.getElementById('label-form-username');
+    const inputUser = document.getElementById('form-username');
+    const labelPass = document.getElementById('label-form-password');
+
+    if (badge) {
+      badge.textContent = CATEGORY_NAMES[cat] || 'Запись';
+    }
+
+    if (cat === 'games') {
+      gameHelper.style.display = 'flex';
+      groupUrl.style.display = 'none';
+      labelTitle.textContent = 'Название игры';
+      inputTitle.placeholder = 'Steam, Roblox, Dota 2, CS2, Cyberpunk 2077...';
+      labelUser.textContent = 'Логин / Никнейм / Steam ID';
+      inputUser.placeholder = 'Игровой логин или никнейм...';
+      labelPass.textContent = 'Пароль к игре';
+    } else if (cat === 'cards') {
+      gameHelper.style.display = 'none';
+      groupUrl.style.display = 'none';
+      labelTitle.textContent = 'Название банка / карты';
+      inputTitle.placeholder = 'Т-Банк, Сбербанк, Альфа-Банк, Mir...';
+      labelUser.textContent = 'Номер карты';
+      inputUser.placeholder = '0000 0000 0000 0000';
+      labelPass.textContent = 'Срок и CVV код';
+    } else if (cat === 'notes') {
+      gameHelper.style.display = 'none';
+      groupUrl.style.display = 'none';
+      labelTitle.textContent = 'Заголовок заметки';
+      inputTitle.placeholder = 'Секретный код, пароли от роутера, заметка...';
+      labelUser.textContent = 'Метка / Тема';
+      inputUser.placeholder = 'Личное, Работа, Сервер...';
+      labelPass.textContent = 'Секретный код / PIN (необязательно)';
+    } else {
+      // Accounts & default
+      gameHelper.style.display = 'none';
+      groupUrl.style.display = 'flex';
+      labelTitle.textContent = 'Название сервиса / сайта';
+      inputTitle.placeholder = 'Discord, Google, Telegram, VK, GitHub...';
+      labelUser.textContent = 'Логин / Email / Телефон';
+      inputUser.placeholder = 'user@example.com';
+      labelPass.textContent = 'Пароль';
+    }
   }
 
   // ==============================================================================
@@ -1129,7 +1588,7 @@
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(() => {
       toast.classList.remove('show');
-    }, 2500);
+    }, 2400);
   }
 
   function escapeHtml(str) {

@@ -17,6 +17,10 @@ contextBridge.exposeInMainWorld('aegis', {
   listWallpapers: () => ipcRenderer.invoke('wallpapers-list'),
   selectAndAddWallpaper: () => ipcRenderer.invoke('wallpapers-select-file'),
 
+  selectGameExe: () => ipcRenderer.invoke('games-select-exe'),
+  getStorageInfo: () => ipcRenderer.invoke('storage-info'),
+  openExternal: (url) => ipcRenderer.send('open-external-url', url),
+
   onMaximizedState: (callback) => {
     ipcRenderer.on('window-maximized-state', (event, state) => callback(state));
   }

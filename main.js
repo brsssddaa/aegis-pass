@@ -6,13 +6,13 @@ let mainWindow = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1180,
-    height: 760,
+    width: 920,
+    height: 620,
     minWidth: 920,
     minHeight: 620,
     frame: false,
     titleBarStyle: 'hidden',
-    backgroundColor: '#0c1017',
+    backgroundColor: '#090b10',
     icon: path.join(__dirname, 'src', 'assets', 'icons', 'icon.png'),
     show: false,
     webPreferences: {
@@ -68,6 +68,13 @@ ipcMain.on('clipboard-copy', (event, text) => {
   }
 });
 
+// Open external URL in default browser
+ipcMain.on('open-external-url', (event, url) => {
+  if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+    shell.openExternal(url);
+  }
+});
+
 // Local Vault Storage (AppData / userData)
 const getVaultPath = () => path.join(app.getPath('userData'), 'aegis_vault.json');
 const getSettingsPath = () => path.join(app.getPath('userData'), 'aegis_settings.json');
@@ -105,10 +112,26 @@ ipcMain.handle('vault-read-encrypted', async () => {
   return null;
 });
 
+let syncServer = null;
+function initSyncServer() {
+  try {
+    syncServer = require('./server/server.js');
+  } catch (e) {
+    console.error('Failed to init sync server:', e.message);
+  }
+}
+
 ipcMain.handle('vault-write-encrypted', async (event, data) => {
   try {
     const p = getVaultPath();
     fs.writeFileSync(p, data, 'utf-8');
+    if (syncServer && syncServer.syncManager) {
+      try {
+        const parsed = JSON.parse(data);
+        const items = Array.isArray(parsed) ? parsed : (parsed.items || []);
+        syncServer.syncManager._broadcastUpdate(items, 'desktop', 'Windows PC');
+      } catch (_) {}
+    }
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
@@ -202,8 +225,63 @@ ipcMain.handle('wallpapers-select-file', async () => {
   }
 });
 
+// Select Game executable (.exe / .lnk / .url) on PC
+ipcMain.handle('games-select-exe', async () => {
+  if (!mainWindow) return { ok: false };
+  try {
+    const res = await dialog.showOpenDialog(mainWindow, {
+      title: 'Выберите игру или приложение (.exe / ярлык)',
+      properties: ['openFile'],
+      filters: [
+        { name: 'Игры и программы', extensions: ['exe', 'lnk', 'url'] },
+        { name: 'Все файлы', extensions: ['*'] }
+      ]
+    });
+
+    if (res.canceled || !res.filePaths || res.filePaths.length === 0) {
+      return { ok: false, canceled: true };
+    }
+
+    const fullPath = res.filePaths[0];
+    const parsed = path.parse(fullPath);
+    let title = parsed.name;
+    // Clean up title
+    title = title.replace(/\.exe$/i, '').replace(/[-_]/g, ' ').trim();
+    // Capitalize words
+    title = title.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+    return { ok: true, name: title, path: fullPath };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+// Get vault storage info (path, size, item stats)
+ipcMain.handle('storage-info', async () => {
+  try {
+    const vPath = getVaultPath();
+    let sizeBytes = 0;
+    let exists = false;
+    if (fs.existsSync(vPath)) {
+      exists = true;
+      const stats = fs.statSync(vPath);
+      sizeBytes = stats.size;
+    }
+    return {
+      ok: true,
+      path: vPath,
+      exists: exists,
+      sizeBytes: sizeBytes,
+      sizeFormatted: (sizeBytes / 1024).toFixed(1) + ' КБ'
+    };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
 app.whenReady().then(() => {
   initDefaultWallpapers();
+  initSyncServer();
   createWindow();
 
   app.on('activate', () => {
