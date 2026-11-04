@@ -1285,7 +1285,138 @@
         }
       });
     }
+
+    // Render Cloud Sync Setup
+    setupRenderCloudSync();
   }
+
+  function setupRenderCloudSync() {
+    const renderCloudUrlInput = document.getElementById('render-cloud-url');
+    const btnSaveRenderCloud = document.getElementById('btn-save-render-cloud');
+    const renderCloudBadge = document.getElementById('render-cloud-badge');
+    const renderCloudStatus = document.getElementById('render-cloud-status');
+
+    const savedRenderUrl = localStorage.getItem('aegis_render_cloud_url') || '';
+    if (renderCloudUrlInput && savedRenderUrl) {
+      renderCloudUrlInput.value = savedRenderUrl;
+      checkRenderCloudStatus(savedRenderUrl);
+    }
+
+    if (btnSaveRenderCloud) {
+      btnSaveRenderCloud.addEventListener('click', async () => {
+        const url = (renderCloudUrlInput?.value || '').trim().replace(/\/+$/, '');
+        localStorage.setItem('aegis_render_cloud_url', url);
+        if (themeEngine && themeEngine.sounds) themeEngine.sounds.playClick();
+        if (url) {
+          await syncWithRenderCloud(url);
+        } else {
+          if (renderCloudStatus) renderCloudStatus.textContent = 'Статус: Локальный режим';
+          if (renderCloudBadge) {
+            renderCloudBadge.textContent = 'Отключен';
+            renderCloudBadge.style.color = '#8a96aa';
+          }
+          showToast('Render Cloud отключен');
+        }
+      });
+    }
+  }
+
+  async function checkRenderCloudStatus(url) {
+    const renderCloudBadge = document.getElementById('render-cloud-badge');
+    const renderCloudStatus = document.getElementById('render-cloud-status');
+    try {
+      const res = await fetch(`${url}/api/status`);
+      if (res.ok) {
+        if (renderCloudBadge) {
+          renderCloudBadge.textContent = 'Подключено (24/7)';
+          renderCloudBadge.style.color = '#00ff88';
+        }
+        if (renderCloudStatus) renderCloudStatus.textContent = `Статус: Подключено к ${url}`;
+        connectRenderCloudSse(url);
+      }
+    } catch (_) {
+      if (renderCloudBadge) {
+        renderCloudBadge.textContent = 'Офлайн';
+        renderCloudBadge.style.color = '#ffaa00';
+      }
+    }
+  }
+
+  let renderSseSource = null;
+  function connectRenderCloudSse(url) {
+    if (renderSseSource) renderSseSource.close();
+    try {
+      const token = localStorage.getItem('aegis_render_token') || '';
+      renderSseSource = new EventSource(`${url}/api/vault/events?token=${encodeURIComponent(token)}&deviceId=desktop_pc`);
+      renderSseSource.addEventListener('vault_update', async (e) => {
+        try {
+          const payload = JSON.parse(e.data);
+          if (payload.senderDeviceId !== 'desktop_pc' && Array.isArray(payload.items)) {
+            vaultItems = payload.items;
+            if (window.aegis && window.aegis.writeVault) {
+              await window.aegis.writeVault(vaultItems);
+            }
+            renderVaultGrid();
+            updateStatsCounts();
+            showToast('Пароли обновлены с телефона через Render Cloud');
+          }
+        } catch (_) {}
+      });
+    } catch (_) {}
+  }
+
+  async function syncWithRenderCloud(url) {
+    const renderCloudBadge = document.getElementById('render-cloud-badge');
+    const renderCloudStatus = document.getElementById('render-cloud-status');
+    if (renderCloudBadge) renderCloudBadge.textContent = 'Подключение...';
+
+    try {
+      // 1. Check status
+      const statusRes = await fetch(`${url}/api/status`);
+      if (!statusRes.ok) throw new Error('Сервер недоступен');
+
+      // 2. Auth login with PIN 2026
+      let token = localStorage.getItem('aegis_render_token') || '';
+      const loginRes = await fetch(`${url}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: '2026' })
+      });
+      if (loginRes.ok) {
+        const loginData = await loginRes.json();
+        token = loginData.token || '';
+        localStorage.setItem('aegis_render_token', token);
+      }
+
+      // 3. Upload current desktop vault items to Render
+      const uploadRes = await fetch(`${url}/api/vault`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-Device-Id': 'desktop_pc',
+          'X-Device-Name': 'Aegis Pass Desktop'
+        },
+        body: JSON.stringify({ items: vaultItems })
+      });
+
+      if (uploadRes.ok) {
+        if (renderCloudBadge) {
+          renderCloudBadge.textContent = 'Активен (Синхронизировано)';
+          renderCloudBadge.style.color = '#00ff88';
+        }
+        if (renderCloudStatus) renderCloudStatus.textContent = `Статус: Синхронизировано с ${url}`;
+        connectRenderCloudSse(url);
+        showToast('Render Cloud успешно подключен и синхронизирован');
+      }
+    } catch (err) {
+      if (renderCloudBadge) {
+        renderCloudBadge.textContent = 'Ошибка подключения';
+        renderCloudBadge.style.color = '#ff3366';
+      }
+      if (renderCloudStatus) renderCloudStatus.textContent = 'Ошибка: ' + err.message;
+      showToast('Не удалось подключиться к Render: ' + err.message);
+    }
 
   async function updateStorageStats() {
     const total = vaultItems.length;
@@ -1556,9 +1687,28 @@
       if (window.aegis) {
         await window.aegis.saveVault(JSON.stringify(vaultItems, null, 2));
       }
+      pushToRenderCloud();
     } catch (e) {
       console.error('Failed to save vault:', e);
     }
+  }
+
+  async function pushToRenderCloud() {
+    const url = localStorage.getItem('aegis_render_cloud_url');
+    const token = localStorage.getItem('aegis_render_token');
+    if (!url) return;
+    try {
+      await fetch(`${url}/api/vault`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+          'X-Device-Id': 'desktop_pc',
+          'X-Device-Name': 'Aegis Pass Desktop'
+        },
+        body: JSON.stringify({ items: vaultItems })
+      });
+    } catch (_) {}
   }
 
   // Inactivity auto-lock

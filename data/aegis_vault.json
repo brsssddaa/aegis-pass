@@ -1,0 +1,35 @@
+[
+  {
+    "id": "item_1793784253337",
+    "title": "Fortnite",
+    "category": "games",
+    "username": "genius.pro@mail.ru",
+    "password": "FlushaHrysha9000",
+    "url": "",
+    "notes": "Основа",
+    "favorite": false,
+    "createdAt": 1793784253337
+  },
+  {
+    "id": "item_1793784225944",
+    "title": "Discord",
+    "category": "accounts",
+    "username": "hddfi@yandex.ru",
+    "password": "Rkr8WKH,OGW*",
+    "url": "",
+    "notes": "",
+    "favorite": true,
+    "createdAt": 1793784225944
+  },
+  {
+    "category": "accounts",
+    "notes": "Синхронизировано через Aegis Server",
+    "password": "SuperSecretTelegram2026!",
+    "username": "@sexyseven",
+    "title": "Telegram",
+    "url": "https://telegram.org",
+    "id": "item_test_sync_1793800851293",
+    "favorite": true,
+    "createdAt": 1793800851298
+  }
+]

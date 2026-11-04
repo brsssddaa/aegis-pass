@@ -473,14 +473,36 @@
                 </div>
               </div>
 
-              <!-- Server Sync Section -->
+              <!-- Render Cloud 24/7 Section -->
               <div class="kpm-section-card">
                 <div class="kpm-section-header">
-                  <span>Сервер синхронизации (Web & Телефон)</span>
+                  <span>Render Cloud 24/7 Сервер</span>
+                  <span class="kpm-badge" id="render-cloud-badge" style="background: rgba(0, 255, 136, 0.15); color: #00ff88;">Готов к подключению</span>
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5;">
+                  Облачный сервер на платформе Render обеспечивает круглосуточный доступ к вашим паролям с любого устройства (телефон Poco X7 Pro, ПК) без необходимости держать домашний компьютер включенным.
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                  <label style="display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px;">URL сервера на Render</label>
+                  <input type="text" id="render-cloud-url" class="form-control" placeholder="https://aegis-pass-server.onrender.com" style="font-family: monospace; font-size: 13px;">
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                  <button class="kpm-btn-primary" id="btn-save-render-cloud">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    <span>Сохранить и Синхронизировать</span>
+                  </button>
+                  <span id="render-cloud-status" style="font-size: 12px; color: var(--text-dim);">Статус: Локальное хранилище</span>
+                </div>
+              </div>
+
+              <!-- Local & LAN Server Sync Section -->
+              <div class="kpm-section-card">
+                <div class="kpm-section-header">
+                  <span>Локальный сервер (Домашняя сеть & Tailscale)</span>
                   <span class="kpm-badge" id="server-status-badge" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">Активен (8088)</span>
                 </div>
                 <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5;">
-                  Встроенный веб-сервер позволяет синхронизировать и просматривать пароли с любого смартфона (Poco X7 Pro, Android, iOS) или другого ПК через браузер без необходимости устанавливать приложение.
+                  Локальный сервер запущен прямо на этом ПК для мгновенной синхронизации по локальной сети Wi-Fi или через защищённый тоннель Tailscale.
                 </div>
                 <div class="kpm-info-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 14px;">
                   <div class="kpm-info-box">

@@ -1,0 +1,2 @@
+rootProject.name = "AegisPass"
+include ':app'

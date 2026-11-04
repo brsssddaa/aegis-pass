@@ -1,4 +1,5 @@
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -48,17 +49,40 @@ function getNetworkAddresses() {
 
 // Generate simple HMAC token for sessions
 const SERVER_PIN = process.env.AEGIS_PIN || config.server_pin || '2026';
+const activeSessions = new Map(); // token -> { user, createdAt }
 
-function generateToken(pin) {
+function generateToken(identity) {
   const secret = config.session_secret || 'aegis_default_secret_2026';
-  return crypto.createHmac('sha256', secret).update(String(pin) + '_session').digest('hex');
+  return crypto.createHmac('sha256', secret).update(String(identity) + '_session').digest('hex');
 }
 
 function verifyToken(token) {
   if (!config.auth_enabled) return true;
   if (!token) return false;
+  if (activeSessions.has(token)) return true;
   const expected = generateToken(SERVER_PIN);
   return token === expected;
+}
+
+function verifyGoogleToken(idToken) {
+  return new Promise((resolve, reject) => {
+    https.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (json.email && json.sub) {
+            resolve(json);
+          } else {
+            reject(new Error(json.error_description || 'Invalid Google token'));
+          }
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }).on('error', reject);
+  });
 }
 
 function parseCookies(req) {
@@ -170,6 +194,44 @@ const server = http.createServer(async (req, res) => {
       }
     } catch (e) {
       return sendJson(res, 400, { ok: false, error: e.message });
+    }
+  }
+
+  // 2b. Google Sign-In Verification
+  if (pathname === '/api/auth/google' && req.method === 'POST') {
+    try {
+      const body = await readBodyJson(req);
+      const idToken = body.id_token || body.credential;
+      if (!idToken) {
+        return sendJson(res, 400, { ok: false, error: 'Google ID token required' });
+      }
+
+      const googleUser = await verifyGoogleToken(idToken);
+      const sessionToken = generateToken(googleUser.email);
+      activeSessions.set(sessionToken, {
+        email: googleUser.email,
+        name: googleUser.name,
+        sub: googleUser.sub,
+        createdAt: Date.now()
+      });
+
+      res.writeHead(200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Set-Cookie': `aegis_token=${sessionToken}; Path=/; HttpOnly; Max-Age=2592000; SameSite=Lax`,
+        'Access-Control-Allow-Origin': '*'
+      });
+      return res.end(JSON.stringify({
+        ok: true,
+        token: sessionToken,
+        user: {
+          email: googleUser.email,
+          name: googleUser.name,
+          picture: googleUser.picture
+        },
+        message: 'Вход через Google успешен'
+      }));
+    } catch (err) {
+      return sendJson(res, 401, { ok: false, error: 'Ошибка верификации Google: ' + err.message });
     }
   }
 
