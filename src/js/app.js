@@ -368,13 +368,114 @@
       });
     });
 
-    // Google Account avatar button at sidebar bottom (No popup window)
+    // Google Account avatar button at sidebar bottom (Toggle Logout Popover)
     const btnGoogle = document.getElementById('btn-google-account');
-    if (btnGoogle) {
-      btnGoogle.addEventListener('click', () => {
+    const avatarPopover = document.getElementById('avatar-logout-popover');
+    const btnAvatarLogout = document.getElementById('btn-avatar-logout');
+    const avatarPopoverEmail = document.getElementById('avatar-popover-email');
+    const avatarPopoverStatus = document.getElementById('avatar-popover-status');
+
+    if (btnGoogle && avatarPopover) {
+      btnGoogle.addEventListener('click', (e) => {
+        e.stopPropagation();
         themeEngine.sounds.playClick();
-        const email = (googleAccount && googleAccount.email) || 'hddfi@gmail.com';
-        showToast(`Google ID: ${email} • Мастер-ключ защищен`);
+
+        const isVisible = avatarPopover.style.display !== 'none';
+        if (isVisible) {
+          avatarPopover.style.display = 'none';
+        } else {
+          // Update popover data
+          const currentEmail = (googleAccount && googleAccount.linked && googleAccount.email)
+            || localStorage.getItem('aegis_google_email')
+            || 'hddfi@gmail.com';
+          const isLinked = Boolean((googleAccount && googleAccount.linked) || localStorage.getItem('aegis_otp_token'));
+
+          if (avatarPopoverEmail) {
+            avatarPopoverEmail.textContent = currentEmail;
+          }
+          if (avatarPopoverStatus) {
+            avatarPopoverStatus.textContent = isLinked ? 'Google ID • Zero-Knowledge' : 'Сессия не активна';
+          }
+
+          avatarPopover.style.display = 'block';
+        }
+      });
+
+      // Close popover when clicking anywhere outside
+      document.addEventListener('click', (e) => {
+        if (avatarPopover.style.display !== 'none') {
+          if (!avatarPopover.contains(e.target) && !btnGoogle.contains(e.target)) {
+            avatarPopover.style.display = 'none';
+          }
+        }
+      });
+
+      // Close popover on Escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && avatarPopover.style.display !== 'none') {
+          avatarPopover.style.display = 'none';
+        }
+      });
+    }
+
+    // Red Logout Button Click
+    if (btnAvatarLogout) {
+      btnAvatarLogout.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        themeEngine.sounds.playClick();
+
+        // 1. Clear session and tokens
+        localStorage.removeItem('aegis_otp_token');
+        localStorage.removeItem('aegis_google_email');
+        localStorage.removeItem('aegis_google_account');
+        localStorage.removeItem('aegis_render_token');
+
+        if (vaultEngine) {
+          vaultEngine.lock();
+        }
+
+        googleAccount = {
+          linked: false,
+          email: '',
+          name: '',
+          picture: ''
+        };
+
+        if (window.aegis && window.aegis.saveGoogleAccount) {
+          try {
+            await window.aegis.saveGoogleAccount(googleAccount);
+          } catch (_) {}
+        }
+
+        updateGoogleUi();
+
+        // 2. Reset settings OTP & Zero-Knowledge card UI if present
+        const badgeOtpStatus = document.getElementById('badge-otp-status');
+        if (badgeOtpStatus) {
+          badgeOtpStatus.textContent = 'Не авторизован';
+          badgeOtpStatus.style.color = '#8a96aa';
+        }
+
+        const otpAuthStatus = document.getElementById('otp-auth-status');
+        if (otpAuthStatus) {
+          otpAuthStatus.textContent = 'Сессия завершена. Требуется повторный вход';
+          otpAuthStatus.style.color = '#ff3366';
+        }
+
+        const inputOtpEmail = document.getElementById('input-otp-email');
+        if (inputOtpEmail) inputOtpEmail.value = '';
+
+        const inputOtpCode = document.getElementById('input-otp-code');
+        if (inputOtpCode) inputOtpCode.value = '';
+
+        const otpVerifyRow = document.getElementById('otp-verify-row');
+        if (otpVerifyRow) otpVerifyRow.style.display = 'none';
+
+        // 3. Hide popover
+        if (avatarPopover) avatarPopover.style.display = 'none';
+
+        // 4. Notify user
+        showToast('✓ Вы успешно вышли из аккаунта. Сессия завершена.');
       });
     }
 

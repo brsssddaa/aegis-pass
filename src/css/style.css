@@ -519,6 +519,110 @@ body.plate-style-minimal .kpm-menu-item.active::after {
 }
 
 /* ==============================================================================
+   AVATAR LOGOUT POPOVER & RED LOGOUT BUTTON
+   ============================================================================== */
+.kpm-google-avatar-wrapper {
+  position: relative;
+  -webkit-app-region: no-drag;
+}
+
+.avatar-logout-popover {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 0;
+  min-width: 215px;
+  max-width: 235px;
+  background: rgba(14, 18, 28, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 60, 60, 0.4);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75), 0 0 20px rgba(239, 68, 68, 0.22);
+  z-index: 9999;
+  -webkit-app-region: no-drag;
+  animation: avatarPopoverSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: bottom left;
+}
+
+@keyframes avatarPopoverSlide {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.avatar-popover-info {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.avatar-popover-user {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.2px;
+}
+
+.avatar-popover-sub {
+  font-size: 11px;
+  color: #8a96aa;
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.avatar-popover-sub::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00ff88;
+  box-shadow: 0 0 6px #00ff88;
+}
+
+.btn-logout-red {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border: 1px solid rgba(255, 120, 120, 0.45);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  -webkit-app-region: no-drag;
+}
+
+.btn-logout-red:hover {
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.65), 0 4px 16px rgba(0, 0, 0, 0.5);
+  transform: translateY(-1.5px);
+  border-color: rgba(255, 160, 160, 0.6);
+}
+
+.btn-logout-red:active {
+  transform: translateY(0);
+}
+
+/* ==============================================================================
    GOOGLE ACCOUNT MODAL
    ============================================================================== */
 .kpm-google-modal-card {
