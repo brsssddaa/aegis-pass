@@ -19,6 +19,68 @@ class VaultSyncManager {
     this._ensureVaultFile();
   }
 
+  getEncryptedVaultPath() {
+    return path.join(path.dirname(this.vaultPath), 'aegis_vault_zero_knowledge.json');
+  }
+
+  getEncryptedVault() {
+    try {
+      const p = this.getEncryptedVaultPath();
+      if (fs.existsSync(p)) {
+        const raw = fs.readFileSync(p, 'utf-8');
+        return {
+          ok: true,
+          encrypted: true,
+          version: this.version,
+          lastModified: this.lastModified,
+          data: JSON.parse(raw)
+        };
+      }
+    } catch (e) {
+      console.error('[VAULT-ZK] Read error:', e.message);
+    }
+    return { ok: false, error: 'Зашифрованное хранилище ещё не создано' };
+  }
+
+  updateEncryptedVault(encryptedBlob, deviceId = 'unknown', deviceName = 'Client') {
+    const p = this.getEncryptedVaultPath();
+    const tempPath = p + '.tmp';
+    fs.writeFileSync(tempPath, JSON.stringify(encryptedBlob, null, 2), 'utf-8');
+    fs.renameSync(tempPath, p);
+
+    this.version++;
+    this.lastModified = Date.now();
+
+    this._broadcastEncryptedUpdate(encryptedBlob, deviceId, deviceName);
+
+    return {
+      ok: true,
+      encrypted: true,
+      version: this.version,
+      lastModified: this.lastModified
+    };
+  }
+
+  _broadcastEncryptedUpdate(encryptedBlob, senderId, senderName) {
+    const msg = `event: vault_encrypted_update\ndata: ${JSON.stringify({
+      version: this.version,
+      lastModified: this.lastModified,
+      encryptedBlob: encryptedBlob,
+      senderId: senderId,
+      senderName: senderName
+    })}\n\n`;
+
+    for (const client of this.sseClients) {
+      if (client.deviceId !== senderId) {
+        try {
+          client.res.write(msg);
+        } catch (_) {
+          this.sseClients.delete(client);
+        }
+      }
+    }
+  }
+
   _ensureVaultFile() {
     try {
       const dir = path.dirname(this.vaultPath);

@@ -85,6 +85,61 @@ function verifyGoogleToken(idToken) {
   });
 }
 
+let nodemailer = null;
+try {
+  nodemailer = require('nodemailer');
+} catch (_) {}
+
+const pendingOtps = new Map(); // email -> { code, expiresAt, attempts }
+
+async function sendOtpEmail(email, code) {
+  const smtpConfig = config.smtp || {};
+  if (nodemailer && smtpConfig.user && smtpConfig.pass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        service: smtpConfig.service || 'gmail',
+        host: smtpConfig.host || 'smtp.gmail.com',
+        port: smtpConfig.port || 465,
+        secure: smtpConfig.secure !== false,
+        auth: {
+          user: smtpConfig.user,
+          pass: smtpConfig.pass
+        }
+      });
+      await transporter.sendMail({
+        from: `"Aegis Pass Security" <${smtpConfig.user}>`,
+        to: email,
+        subject: `Код подтверждения Aegis Pass: ${code}`,
+        text: `Ваш одноразовый код для входа в Aegis Pass: ${code}\nКод действует 5 минут. Никому не сообщайте этот код.`,
+        html: `
+          <div style="background: #0d1117; color: #f0f6fc; padding: 24px; border-radius: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid rgba(0,229,255,0.3);">
+            <h2 style="color: #00e5ff; margin-top: 0; letter-spacing: 0.5px;">Aegis Pass Security</h2>
+            <p style="color: #94a3b8; font-size: 14px;">Одноразовый код для подтверждения входа в зашифрованное хранилище:</p>
+            <div style="background: rgba(0,229,255,0.08); border: 2px dashed #00e5ff; border-radius: 10px; padding: 18px; text-align: center; margin: 20px 0;">
+              <span style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #ffffff; font-family: monospace;">${code}</span>
+            </div>
+            <p style="color: #64748b; font-size: 12px; margin-bottom: 0;">Код действует 5 минут. Если вы не запрашивали вход, проигнорируйте письмо.</p>
+          </div>
+        `
+      });
+      console.log(`[AUTH] Sent real email OTP to ${email}`);
+      return { sent: true };
+    } catch (e) {
+      console.error('[AUTH] SMTP send failed:', e.message);
+    }
+  }
+
+  // Local/Dev fallback output
+  console.log(`\n====================================================`);
+  console.log(`  AEGIS PASS EMAIL OTP VERIFICATION CODE`);
+  console.log(`====================================================`);
+  console.log(`* To Email: ${email}`);
+  console.log(`* OTP Code: [ ${code} ]`);
+  console.log(`* Expires : 5 minutes`);
+  console.log(`====================================================\n`);
+  return { sent: false, dev: true };
+}
+
 function parseCookies(req) {
   const list = {};
   const cookieHeader = req.headers.cookie;
@@ -232,6 +287,124 @@ const server = http.createServer(async (req, res) => {
       }));
     } catch (err) {
       return sendJson(res, 401, { ok: false, error: 'Ошибка верификации Google: ' + err.message });
+    }
+  }
+
+  // 2c. Request Google Email OTP (One-Time Password)
+  if (pathname === '/api/auth/otp/request' && req.method === 'POST') {
+    try {
+      const body = await readBodyJson(req);
+      const email = String(body.email || '').trim().toLowerCase();
+      if (!email || !email.includes('@')) {
+        return sendJson(res, 400, { ok: false, error: 'Введите корректный Google email' });
+      }
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      pendingOtps.set(email, {
+        code: code,
+        expiresAt: Date.now() + 5 * 60 * 1000,
+        attempts: 0
+      });
+
+      const sendResult = await sendOtpEmail(email, code);
+
+      return sendJson(res, 200, {
+        ok: true,
+        message: 'Код подтверждения отправлен на почту',
+        email: email,
+        expiresIn: 300,
+        devCode: sendResult.dev ? code : undefined
+      });
+    } catch (e) {
+      return sendJson(res, 500, { ok: false, error: e.message });
+    }
+  }
+
+  // 2d. Verify Google Email OTP
+  if (pathname === '/api/auth/otp/verify' && req.method === 'POST') {
+    try {
+      const body = await readBodyJson(req);
+      const email = String(body.email || '').trim().toLowerCase();
+      const code = String(body.code || '').trim();
+
+      if (!email || !code) {
+        return sendJson(res, 400, { ok: false, error: 'Email и код обязательны' });
+      }
+
+      const pending = pendingOtps.get(email);
+      if (!pending) {
+        return sendJson(res, 400, { ok: false, error: 'Код не запрашивался или срок действия истёк. Запросите код заново.' });
+      }
+
+      if (Date.now() > pending.expiresAt) {
+        pendingOtps.delete(email);
+        return sendJson(res, 400, { ok: false, error: 'Срок действия кода истёк. Запросите новый код.' });
+      }
+
+      if (pending.attempts >= 5) {
+        pendingOtps.delete(email);
+        return sendJson(res, 429, { ok: false, error: 'Слишком много неверных попыток. Запросите код заново.' });
+      }
+
+      if (pending.code !== code) {
+        pending.attempts++;
+        return sendJson(res, 401, {
+          ok: false,
+          error: `Неверный код. Осталось попыток: ${5 - pending.attempts}`
+        });
+      }
+
+      pendingOtps.delete(email);
+      const sessionToken = generateToken(email);
+      activeSessions.set(sessionToken, {
+        email: email,
+        name: email.split('@')[0],
+        createdAt: Date.now()
+      });
+
+      res.writeHead(200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Set-Cookie': `aegis_token=${sessionToken}; Path=/; HttpOnly; Max-Age=2592000; SameSite=Lax`,
+        'Access-Control-Allow-Origin': '*'
+      });
+      return res.end(JSON.stringify({
+        ok: true,
+        token: sessionToken,
+        user: {
+          email: email,
+          name: email.split('@')[0]
+        },
+        message: 'Успешная авторизация по коду из почты'
+      }));
+    } catch (e) {
+      return sendJson(res, 500, { ok: false, error: e.message });
+    }
+  }
+
+  // 3b. Zero-Knowledge Encrypted Vault Read
+  if (pathname === '/api/vault/encrypted' && req.method === 'GET') {
+    if (!isAuthenticated) {
+      return sendJson(res, 401, { ok: false, error: 'Требуется авторизация' });
+    }
+    const result = syncManager.getEncryptedVault();
+    return sendJson(res, 200, result);
+  }
+
+  // 4b. Zero-Knowledge Encrypted Vault Write / Sync
+  if (pathname === '/api/vault/encrypted' && req.method === 'POST') {
+    if (!isAuthenticated) {
+      return sendJson(res, 401, { ok: false, error: 'Требуется авторизация' });
+    }
+    try {
+      const body = await readBodyJson(req);
+      const encryptedBlob = body.encryptedBlob || body;
+      const deviceId = req.headers['x-device-id'] || body.deviceId || 'unknown';
+      const deviceName = req.headers['x-device-name'] || body.deviceName || 'Client';
+
+      const result = syncManager.updateEncryptedVault(encryptedBlob, deviceId, deviceName);
+      return sendJson(res, 200, result);
+    } catch (e) {
+      return sendJson(res, 400, { ok: false, error: e.message });
     }
   }
 

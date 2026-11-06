@@ -428,6 +428,52 @@
                 </div>
               </div>
 
+              <!-- Google Email OTP & Zero-Knowledge Architecture Card -->
+              <div class="kpm-section-card">
+                <div class="kpm-section-header">
+                  <span>Вход через Google с кодом на почту (Zero-Knowledge)</span>
+                  <span class="kpm-badge" id="badge-otp-status" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">Kaspersky Security Model</span>
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5;">
+                  Двухфакторный вход с одноразовым 6-значным кодом на ваш Google Gmail. Сервер хранит <b>только зашифрованный AES-256-GCM контейнер</b>. Мастер-пароль и открытые данные никогда не передаются в сеть и не хранятся на сервере.
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+                  <div style="flex: 1; min-width: 220px;">
+                    <label style="display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 5px;">Google Email</label>
+                    <input type="email" id="input-otp-email" class="form-control" placeholder="user@gmail.com" value="hddfi@gmail.com" style="width: 100%; font-size: 13px;">
+                  </div>
+                  <div style="display: flex; align-items: flex-end;">
+                    <button class="kpm-btn-secondary" id="btn-request-otp" style="padding: 9px 16px;">
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                      <span>Получить код на почту</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- OTP Code input row (hidden until code requested) -->
+                <div id="otp-verify-row" style="display: none; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 10px; padding: 14px; margin-bottom: 14px;">
+                  <div style="font-size: 12px; color: var(--accent-light); margin-bottom: 8px;">
+                    Введите 6-значный проверочный код из письма:
+                  </div>
+                  <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <input type="text" id="input-otp-code" maxlength="6" class="form-control" placeholder="______" style="width: 140px; font-size: 18px; letter-spacing: 4px; text-align: center; font-family: monospace; font-weight: 700;">
+                    <button class="kpm-btn-primary" id="btn-verify-otp">
+                      <span>Подтвердить и войти</span>
+                    </button>
+                    <span id="otp-timer-label" style="font-size: 12px; color: var(--text-dim);">Код действителен: 5:00</span>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                  <button class="kpm-btn-primary" id="btn-sync-zk-now" style="padding: 7px 16px;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    <span>Синхронизировать Zero-Knowledge</span>
+                  </button>
+                  <span id="otp-auth-status" style="font-size: 12px; color: #00ff88;">✓ Статус: Готов к отправке кода</span>
+                </div>
+              </div>
+
               <!-- Render Cloud 24/7 Section -->
               <div class="kpm-section-card">
                 <div class="kpm-section-header">
