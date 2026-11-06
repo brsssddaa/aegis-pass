@@ -7,6 +7,8 @@
 
   let vaultEngine = null;
   let themeEngine = null;
+  let colorPickerWallpapers = null;
+  let colorPickerSettings = null;
 
   let vaultItems = [];
   let currentCategory = 'accounts'; // 'all' | 'accounts' | 'games' | 'cards' | 'notes'
@@ -169,13 +171,18 @@
 
   // Apply visual settings
   function applySettingsToUi() {
-    themeEngine.applyPalette(settings.theme || 'monochrome');
+    const accentHex = settings.customAccentColor || (settings.theme && settings.theme.startsWith('#') ? settings.theme : null);
+    if (accentHex) {
+      themeEngine.applyCustomColor(accentHex, typeof settings.accentBrightness === 'number' ? settings.accentBrightness : 1.0);
+    } else {
+      themeEngine.applyPalette(settings.theme || 'monochrome');
+    }
     themeEngine.sounds.enabled = settings.uiSounds !== false;
 
-    // Update active swatch
-    document.querySelectorAll('.kpm-swatch-circle').forEach(sw => {
-      sw.classList.toggle('active', sw.getAttribute('data-color') === settings.theme);
-    });
+    // Update color pickers if initialized
+    const currentHex = themeEngine.currentAccentColor || '#00e5ff';
+    if (colorPickerWallpapers) colorPickerWallpapers.setColorFromHex(currentHex, false);
+    if (colorPickerSettings) colorPickerSettings.setColorFromHex(currentHex, false);
 
     const root = document.documentElement;
 
@@ -395,9 +402,17 @@
     } else if (viewKey === 'wallpapers') {
       document.getElementById('pane-wallpapers').classList.add('active');
       renderWallpapersGallery();
+      if (colorPickerWallpapers) {
+        colorPickerWallpapers.drawSpectrumCanvas();
+        colorPickerWallpapers.updateUi(false);
+      }
     } else if (viewKey === 'settings') {
       document.getElementById('pane-settings').classList.add('active');
       updateStorageStats();
+      if (colorPickerSettings) {
+        colorPickerSettings.drawSpectrumCanvas();
+        colorPickerSettings.updateUi(false);
+      }
     } else {
       // Vault cards grid view
       currentCategory = viewKey;
@@ -951,18 +966,49 @@
       });
     }
 
-    // Color Swatches in Wallpapers Pane and Settings
-    document.querySelectorAll('.kpm-swatch-circle').forEach(sw => {
-      sw.addEventListener('click', () => {
-        themeEngine.sounds.playClick();
-        const colorKey = sw.getAttribute('data-color');
-        document.querySelectorAll('.kpm-swatch-circle').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll(`.kpm-swatch-circle[data-color="${colorKey}"]`).forEach(s => s.classList.add('active'));
-        settings.theme = colorKey;
-        themeEngine.applyPalette(colorKey);
-        saveCurrentSettings();
+    // Cyber Color Pickers in Wallpapers Pane and Settings
+    function handleColorChange(hex, rgb, brightness) {
+      themeEngine.applyCustomColor(hex, brightness);
+      settings.customAccentColor = hex;
+      settings.theme = hex;
+      settings.accentBrightness = brightness;
+
+      // Keep both pickers synchronized
+      if (colorPickerWallpapers && this !== colorPickerWallpapers) {
+        colorPickerWallpapers.setColorFromHex(hex, false);
+      }
+      if (colorPickerSettings && this !== colorPickerSettings) {
+        colorPickerSettings.setColorFromHex(hex, false);
+      }
+    }
+
+    function handleColorSave(hex, brightness) {
+      themeEngine.sounds.playClick();
+      settings.customAccentColor = hex;
+      settings.theme = hex;
+      settings.accentBrightness = brightness;
+      saveCurrentSettings();
+    }
+
+    const cWallpapers = document.getElementById('cyber-picker-wallpapers');
+    if (cWallpapers && window.CyberColorPicker && !colorPickerWallpapers) {
+      colorPickerWallpapers = new window.CyberColorPicker(cWallpapers, {
+        onChange: handleColorChange,
+        onSave: handleColorSave
       });
-    });
+      const initHex = settings.customAccentColor || (settings.theme && settings.theme.startsWith('#') ? settings.theme : '#00e5ff');
+      colorPickerWallpapers.setColorFromHex(initHex, false);
+    }
+
+    const cSettings = document.getElementById('cyber-picker-settings');
+    if (cSettings && window.CyberColorPicker && !colorPickerSettings) {
+      colorPickerSettings = new window.CyberColorPicker(cSettings, {
+        onChange: handleColorChange,
+        onSave: handleColorSave
+      });
+      const initHex = settings.customAccentColor || (settings.theme && settings.theme.startsWith('#') ? settings.theme : '#00e5ff');
+      colorPickerSettings.setColorFromHex(initHex, false);
+    }
   }
 
   async function renderWallpapersGallery() {
@@ -1084,6 +1130,9 @@
 
         if (targetSubtab === 'settings-storage') {
           updateStorageStats();
+        } else if (targetSubtab === 'settings-appearance' && colorPickerSettings) {
+          colorPickerSettings.drawSpectrumCanvas();
+          colorPickerSettings.updateUi(false);
         }
       });
     });
@@ -1417,6 +1466,7 @@
       if (renderCloudStatus) renderCloudStatus.textContent = 'Ошибка: ' + err.message;
       showToast('Не удалось подключиться к Render: ' + err.message);
     }
+  }
 
   async function updateStorageStats() {
     const total = vaultItems.length;
