@@ -22,6 +22,11 @@ contextBridge.exposeInMainWorld('aegis', {
   getStorageInfo: () => ipcRenderer.invoke('storage-info'),
   openExternal: (url) => ipcRenderer.send('open-external-url', url),
 
+  getGoogleAccount: () => ipcRenderer.invoke('google-account-get'),
+  saveGoogleAccount: (data) => ipcRenderer.invoke('google-account-save', data),
+  sealMasterKeyWithGoogle: (key) => ipcRenderer.invoke('google-enclave-seal', key),
+  unsealMasterKeyWithGoogle: (sealed) => ipcRenderer.invoke('google-enclave-unseal', sealed),
+
   onMaximizedState: (callback) => {
     ipcRenderer.on('window-maximized-state', (event, state) => callback(state));
   }

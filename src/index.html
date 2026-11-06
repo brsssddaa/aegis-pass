@@ -76,11 +76,24 @@
         </div>
       </div>
 
-      <!-- Bottom controls (Lock button removed completely) -->
+      <!-- Bottom controls: Google Account Avatar & Settings -->
       <div class="kpm-sidebar-bottom">
-        <button class="kpm-sidebar-icon-btn" id="btn-nav-wallpapers" title="Обои и Темы">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
-        </button>
+        <div class="kpm-google-avatar-btn" id="btn-google-account" title="Google Аккаунт: Привязка Мастер-ключа">
+          <div class="kpm-google-avatar-circle" id="google-avatar-circle">
+            <img id="google-avatar-img" src="" alt="Google Avatar" style="display: none;">
+            <div id="google-avatar-fallback" class="kpm-google-fallback-g">
+              <svg viewBox="0 0 48 48" width="20" height="20">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+              </svg>
+            </div>
+          </div>
+          <span class="kpm-google-shield-badge" id="google-shield-badge" title="Мастер-ключ защищен Google ID">
+            <svg viewBox="0 0 24 24" width="9" height="9" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+          </span>
+        </div>
         <button class="kpm-sidebar-icon-btn" id="btn-nav-settings" title="Настройки">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
@@ -191,242 +204,7 @@
           </div>
         </section>
 
-        <!-- 3. WALLPAPERS & THEMES PANE (like in C:\Scripts\minecraft-ai-bot) -->
-        <section class="kpm-view-pane" id="pane-wallpapers">
-          <div style="max-width: 820px; margin: 0 auto;">
-            
-            <!-- Wallpaper Profiles Section -->
-            <div class="kpm-section-card">
-              <div class="kpm-section-header">
-                <span>Профили фона и обоев</span>
-                <span class="kpm-badge" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">ЛКМ — Основа | ПКМ — Меню (Оверлей/Основа)</span>
-              </div>
-
-              <!-- Wide rectangular preview profiles grid (not square) -->
-              <div class="kpm-profiles-grid" id="wallpapers-profiles-container">
-                <!-- Injected profile cards -->
-              </div>
-
-              <!-- Wallpapers Actions Bar -->
-              <div class="kpm-btn-row">
-                <button class="kpm-btn-secondary" id="btn-open-wallpapers-folder">
-                  <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                  <span>Открыть папку с обоями</span>
-                </button>
-                <button class="kpm-btn-secondary" id="btn-add-wallpaper-file">
-                  <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  <span>Добавить изображение</span>
-                </button>
-                <button class="kpm-btn-secondary" id="btn-refresh-wallpapers">
-                  <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                  <span>Обновить список</span>
-                </button>
-                <button class="kpm-btn-secondary" id="btn-reset-wallpaper">
-                  <span>Сбросить все слои</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Dual-Layer Wallpaper Management (Layer 1: Base & Layer 2: Overlay/Frame) -->
-            <div class="kpm-section-card">
-              <div class="kpm-section-header">
-                <span>Двухуровневый фон (Основа + Оверлей / Рамка)</span>
-                <span class="kpm-badge" id="badge-overlay-status" style="background: rgba(217, 70, 239, 0.18); color: #d946ef;">Оверлей активен</span>
-              </div>
-
-              <!-- Dual Layers Status Chips -->
-              <div class="kpm-layers-info-bar">
-                <div class="kpm-layer-chip">
-                  <span class="kpm-layer-dot base"></span>
-                  <span class="kpm-layer-chip-title">Слой 1 (Основной фон):</span>
-                  <b id="val-base-wp-name">anime_companion.jpg</b>
-                </div>
-                <div class="kpm-layer-chip">
-                  <span class="kpm-layer-dot overlay"></span>
-                  <span class="kpm-layer-chip-title">Слой 2 (Оверлей / Рамка):</span>
-                  <b id="val-overlay-wp-name">gothic_frame_overlay.jpg</b>
-                  <button class="kpm-layer-remove-btn" id="btn-clear-overlay" title="Снять оверлей">×</button>
-                </div>
-              </div>
-
-              <!-- Layer 1 (Base) Controls -->
-              <div class="kpm-layer-settings-box">
-                <div class="kpm-layer-settings-title">Параметры основного фона (Слой 1)</div>
-                <div class="kpm-slider-row" style="margin-top: 10px; align-items: center; justify-content: space-between; display: flex;">
-                  <div class="kpm-slider-meta" style="margin-bottom: 0;">
-                    <span>Масштабирование основы</span>
-                  </div>
-                  <select id="select-wallpaper-fit" class="kpm-select-cyber">
-                    <option value="cover">Заполнение (Cover, с сохранением пропорций)</option>
-                    <option value="fill">Растянуть на весь размер окна (Fill)</option>
-                    <option value="contain">Вписать целиком (Contain)</option>
-                  </select>
-                </div>
-
-                <div class="kpm-slider-row">
-                  <div class="kpm-slider-meta">
-                    <span>Яркость основы</span>
-                    <span class="kpm-slider-val" id="val-bg-brightness">100%</span>
-                  </div>
-                  <input type="range" id="slider-bg-brightness" min="20" max="180" value="100">
-                </div>
-
-                <div class="kpm-slider-row">
-                  <div class="kpm-slider-meta">
-                    <span>Прозрачность основы</span>
-                    <span class="kpm-slider-val" id="val-bg-opacity">25%</span>
-                  </div>
-                  <input type="range" id="slider-bg-opacity" min="0" max="85" value="25">
-                </div>
-
-                <div class="kpm-slider-row">
-                  <div class="kpm-slider-meta">
-                    <span>Размытие основы (Backdrop Blur)</span>
-                    <span class="kpm-slider-val" id="val-bg-blur">10px</span>
-                  </div>
-                  <input type="range" id="slider-bg-blur" min="0" max="30" value="10">
-                </div>
-              </div>
-
-              <!-- Layer 2 (Overlay / Frame) Controls -->
-              <div class="kpm-layer-settings-box" style="margin-top: 16px; border-color: rgba(217, 70, 239, 0.28);">
-                <div class="kpm-layer-settings-title" style="color: #e879f9;">Параметры оверлея / рамки (Слой 2)</div>
-                <div class="kpm-slider-row" style="margin-top: 10px; align-items: center; justify-content: space-between; display: flex;">
-                  <div class="kpm-slider-meta" style="margin-bottom: 0;">
-                    <span>Режим смешивания (Blend Mode)</span>
-                  </div>
-                  <select id="select-bg-overlay-blend" class="kpm-select-cyber">
-                    <option value="screen">Screen (Осветление: черное исчезает, цепи/звезды светятся!)</option>
-                    <option value="normal">Normal (Обычное наложение с прозрачностью)</option>
-                    <option value="lighten">Lighten (Замена светлым)</option>
-                    <option value="overlay">Overlay (Контрастный кибер-микс)</option>
-                  </select>
-                </div>
-
-                <div class="kpm-slider-row">
-                  <div class="kpm-slider-meta">
-                    <span>Прозрачность оверлея</span>
-                    <span class="kpm-slider-val" id="val-bg-overlay-opacity">85%</span>
-                  </div>
-                  <input type="range" id="slider-bg-overlay-opacity" min="0" max="100" value="85">
-                </div>
-              </div>
-
-              <!-- General Window Glass Transparency -->
-              <div class="kpm-slider-row" style="margin-top: 18px;">
-                <div class="kpm-slider-meta">
-                  <span>Прозрачность левого бокового меню</span>
-                  <span class="kpm-slider-val" id="val-sidebar-opacity-wallpapers">80%</span>
-                </div>
-                <input type="range" id="slider-sidebar-opacity-wallpapers" min="10" max="100" value="80">
-              </div>
-
-              <div class="kpm-slider-row">
-                <div class="kpm-slider-meta">
-                  <span>Прозрачность прочих таблиц и панелей</span>
-                  <span class="kpm-slider-val" id="val-tabs-opacity-wallpapers">70%</span>
-                </div>
-                <input type="range" id="slider-tabs-opacity-wallpapers" min="10" max="100" value="70">
-              </div>
-
-              <div class="kpm-slider-row">
-                <div class="kpm-slider-meta">
-                  <span>Прозрачность карточек записей</span>
-                  <span class="kpm-slider-val" id="val-card-opacity-wallpapers">70%</span>
-                </div>
-                <input type="range" id="slider-card-opacity-wallpapers" min="10" max="100" value="70">
-              </div>
-            </div>
-
-            <!-- Custom Menu Plates Section (Кастомизация табличек меню) -->
-            <div class="kpm-section-card">
-              <div class="kpm-section-header">
-                <span>Кастомизация табличек меню (Слева)</span>
-                <span class="kpm-badge" style="background: rgba(var(--accent-rgb, 0, 229, 255), 0.16); color: var(--accent-light);">Стиль & Цвет</span>
-              </div>
-              <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5;">
-                Настройте индивидуальный оттенок, яркость контуров и визуальные эффекты кибер-табличек навигации.
-              </div>
-
-              <!-- Plate Color Mode Toggle -->
-              <div class="kpm-slider-row" style="margin-top: 4px; align-items: center; justify-content: space-between; display: flex;">
-                <div class="kpm-slider-meta" style="margin-bottom: 0;">
-                  <span>Цветовой режим табличек</span>
-                </div>
-                <div class="kpm-filter-group" id="plate-color-mode-bar">
-                  <button class="kpm-filter-pill active" id="btn-plate-mode-accent" data-mode="accent">Следовать за акцентом</button>
-                  <button class="kpm-filter-pill" id="btn-plate-mode-custom" data-mode="custom">Свой цвет табличек</button>
-                </div>
-              </div>
-
-              <!-- Plate Custom Color Picker Row -->
-              <div id="plate-custom-color-wrap" style="display: none; margin-top: 14px; padding: 12px; background: rgba(0, 0, 0, 0.25); border-radius: 9px; border: 1px solid rgba(255, 255, 255, 0.08);">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-                  <div style="display: flex; align-items: center; gap: 10px;">
-                    <div class="kpm-picker-swatch-chip" id="plate-swatch-chip" style="width: 32px; height: 32px;"></div>
-                    <div class="kpm-picker-hex-wrap" style="padding: 3px 8px;">
-                      <span class="kpm-picker-hash">#</span>
-                      <input type="text" class="kpm-picker-hex-input" id="plate-hex-input" value="00E5FF" maxlength="6" style="font-size: 13px; width: 64px;">
-                    </div>
-                  </div>
-                  <div class="kpm-picker-dots-row">
-                    <div class="kpm-color-dot-preset plate-dot" data-hex="#00e5ff" style="--dot-color: #00e5ff;" title="Кибер-циан"></div>
-                    <div class="kpm-color-dot-preset plate-dot" data-hex="#00d68f" style="--dot-color: #00d68f;" title="Изумруд"></div>
-                    <div class="kpm-color-dot-preset plate-dot" data-hex="#ffe600" style="--dot-color: #ffe600;" title="Cyberpunk Неон"></div>
-                    <div class="kpm-color-dot-preset plate-dot" data-hex="#ff0055" style="--dot-color: #ff0055;" title="Неоновый Рубин"></div>
-                    <div class="kpm-color-dot-preset plate-dot" data-hex="#d946ef" style="--dot-color: #d946ef;" title="Маджента"></div>
-                    <div class="kpm-color-dot-preset plate-dot" data-hex="#ffffff" style="--dot-color: #ffffff;" title="Белый титан"></div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Plate Base Contour Opacity Slider -->
-              <div class="kpm-slider-row" style="margin-top: 14px;">
-                <div class="kpm-slider-meta">
-                  <span>Видимость контура неактивных табличек</span>
-                  <span class="kpm-slider-val" id="val-plate-opacity">45%</span>
-                </div>
-                <input type="range" id="slider-plate-opacity" min="15" max="100" value="45">
-              </div>
-
-              <!-- Cyber Pulse Toggle (Функция кастомизации от себя) -->
-              <div class="kpm-slider-row" style="margin-top: 14px; align-items: center; justify-content: space-between; display: flex;">
-                <div class="kpm-slider-meta" style="margin-bottom: 0;">
-                  <span>Неоновое дыхание активной таблички (Cyber Pulse)</span>
-                  <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px;">Плавная живая кибер-пульсация свечения рамки</div>
-                </div>
-                <label class="kpm-switch-wrap">
-                  <input type="checkbox" id="check-plate-pulse" checked>
-                  <span class="kpm-switch-slider"></span>
-                </label>
-              </div>
-
-              <!-- Plate Style Select -->
-              <div class="kpm-slider-row" style="margin-top: 14px; align-items: center; justify-content: space-between; display: flex;">
-                <div class="kpm-slider-meta" style="margin-bottom: 0;">
-                  <span>Стиль подсветки табличек</span>
-                </div>
-                <select id="select-plate-style" class="kpm-select-cyber">
-                  <option value="titanium" selected>Титановый киберпанк (Матовое стекло + Неон)</option>
-                  <option value="neon">Неоновый глянец (Яркий неоновый ореол)</option>
-                  <option value="minimal">Минималистичный контур (Тонкий четкий контур)</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Cyber Color Picker Section -->
-            <div class="kpm-section-card">
-              <div class="kpm-section-header">
-                <span>Кибер-спектр: Выбор любого цвета</span>
-                <span class="kpm-badge" style="background: rgba(var(--accent-rgb, 0, 229, 255), 0.16); color: var(--accent-light);">Спектр & Яркость</span>
-              </div>
-              <div id="cyber-picker-wallpapers"></div>
-            </div>
-
-          </div>
-        </section>
-
-        <!-- 4. SETTINGS PANE WITH BEAUTIFUL SUBTABS -->
+        <!-- 3. SETTINGS PANE (WITH CONSOLIDATED APPEARANCE & WALLPAPERS) -->
         <section class="kpm-view-pane" id="pane-settings">
           <div style="max-width: 780px; margin: 0 auto;">
             
@@ -446,10 +224,99 @@
               </button>
             </div>
 
-            <!-- SUBTAB 1: APPEARANCE & WALLPAPERS & TRANSPARENCY -->
+            <!-- SUBTAB 1: APPEARANCE & WALLPAPERS & COLOR ACCENT -->
             <div class="kpm-subtab-pane active" id="subtab-pane-settings-appearance">
               
-              <!-- Glass Transparency & Blur Adjustments -->
+              <!-- 1. Wallpaper Profiles Section (Widescreen 16:9.5 cards) -->
+              <div class="kpm-section-card">
+                <div class="kpm-section-header">
+                  <span>Профили фона и обоев</span>
+                  <span class="kpm-badge" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">ЛКМ — Основа | ПКМ — Меню (Оверлей/Основа)</span>
+                </div>
+
+                <!-- Wide rectangular preview profiles grid (16:9.5) -->
+                <div class="kpm-profiles-grid" id="wallpapers-profiles-container">
+                  <!-- Injected profile cards -->
+                </div>
+
+                <!-- Wallpapers Actions Bar -->
+                <div class="kpm-btn-row">
+                  <button class="kpm-btn-secondary" id="btn-open-wallpapers-folder">
+                    <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    <span>Открыть папку</span>
+                  </button>
+                  <button class="kpm-btn-secondary" id="btn-add-wallpaper-file">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Добавить обои</span>
+                  </button>
+                  <button class="kpm-btn-secondary" id="btn-refresh-wallpapers">
+                    <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    <span>Обновить</span>
+                  </button>
+                  <button class="kpm-btn-secondary" id="btn-reset-wallpaper">
+                    <span>Сбросить фон</span>
+                  </button>
+                </div>
+
+                <!-- Layers Status Chips -->
+                <div class="kpm-layers-info-bar" style="margin-top: 14px;">
+                  <div class="kpm-layer-chip">
+                    <span class="kpm-layer-dot base"></span>
+                    <span class="kpm-layer-chip-title">Основной фон:</span>
+                    <b id="val-base-wp-name">--</b>
+                  </div>
+                  <div class="kpm-layer-chip" id="chip-overlay-wrap">
+                    <span class="kpm-layer-dot overlay"></span>
+                    <span class="kpm-layer-chip-title">Оверлей / Рамка:</span>
+                    <b id="val-overlay-wp-name">--</b>
+                    <button class="kpm-layer-remove-btn" id="btn-clear-overlay" title="Снять оверлей">×</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. Wallpaper Display Parameters -->
+              <div class="kpm-section-card">
+                <div class="kpm-section-header">
+                  <span>Параметры фона</span>
+                </div>
+
+                <div class="kpm-slider-row" style="margin-top: 6px; align-items: center; justify-content: space-between; display: flex;">
+                  <div class="kpm-slider-meta" style="margin-bottom: 0;">
+                    <span>Масштабирование фона</span>
+                  </div>
+                  <select id="select-wallpaper-fit" class="kpm-select-cyber">
+                    <option value="cover">Заполнение (Cover, с сохранением пропорций)</option>
+                    <option value="fill">Растянуть на весь размер окна (Fill)</option>
+                    <option value="contain">Вписать целиком (Contain)</option>
+                  </select>
+                </div>
+
+                <div class="kpm-slider-row">
+                  <div class="kpm-slider-meta">
+                    <span>Яркость фона</span>
+                    <span class="kpm-slider-val" id="val-bg-brightness">100%</span>
+                  </div>
+                  <input type="range" id="slider-bg-brightness" min="20" max="180" value="100">
+                </div>
+
+                <div class="kpm-slider-row">
+                  <div class="kpm-slider-meta">
+                    <span>Прозрачность обоев</span>
+                    <span class="kpm-slider-val" id="val-bg-opacity">25%</span>
+                  </div>
+                  <input type="range" id="slider-bg-opacity" min="0" max="85" value="25">
+                </div>
+
+                <div class="kpm-slider-row">
+                  <div class="kpm-slider-meta">
+                    <span>Размытие фона (Backdrop Blur)</span>
+                    <span class="kpm-slider-val" id="val-bg-blur">10px</span>
+                  </div>
+                  <input type="range" id="slider-bg-blur" min="0" max="30" value="10">
+                </div>
+              </div>
+
+              <!-- 3. Glass Transparency & Blur Adjustments -->
               <div class="kpm-section-card">
                 <div class="kpm-section-header">
                   <span>Прозрачность интерфейса и стеклянный эффект</span>
@@ -486,53 +353,15 @@
                   </div>
                   <input type="range" id="slider-glass-blur" min="0" max="40" value="16">
                 </div>
-
-                <div class="kpm-slider-row">
-                  <div class="kpm-slider-meta">
-                    <span>Прозрачность обоев на фоне</span>
-                    <span class="kpm-slider-val" id="val-bg-opacity-settings">25%</span>
-                  </div>
-                  <input type="range" id="slider-bg-opacity-settings" min="0" max="85" value="25">
-                </div>
-
-                <div class="kpm-slider-row">
-                  <div class="kpm-slider-meta">
-                    <span>Яркость обоев</span>
-                    <span class="kpm-slider-val" id="val-bg-brightness-settings">100%</span>
-                  </div>
-                  <input type="range" id="slider-bg-brightness-settings" min="20" max="180" value="100">
-                </div>
-
-                <div class="kpm-slider-row" style="align-items: center; justify-content: space-between; display: flex;">
-                  <div class="kpm-slider-meta" style="margin-bottom: 0;">
-                    <span>Масштабирование обоев</span>
-                  </div>
-                  <select id="select-wallpaper-fit-settings" style="background: var(--bg-card); border: 1px solid rgba(255, 255, 255, 0.12); color: #fff; border-radius: 8px; padding: 6px 10px; font-size: 12px; outline: none; cursor: pointer;">
-                    <option value="cover">Заполнение (Cover, с сохранением пропорций)</option>
-                    <option value="fill">Растянуть на весь размер окна (Fill)</option>
-                    <option value="contain">Вписать целиком (Contain)</option>
-                  </select>
-                </div>
               </div>
 
-              <!-- Cyber Color Picker Section -->
+              <!-- 4. Single Cyber Color Picker Section -->
               <div class="kpm-section-card">
                 <div class="kpm-section-header">
                   <span>Цветовой акцент интерфейса</span>
                   <span class="kpm-badge" style="background: rgba(var(--accent-rgb, 0, 229, 255), 0.16); color: var(--accent-light);">Спектр & Яркость</span>
                 </div>
                 <div id="cyber-picker-settings"></div>
-              </div>
-
-              <!-- Quick shortcut to Wallpaper profiles -->
-              <div class="kpm-section-card" style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <div style="font-size: 14px; font-weight: 600; color: #fff;">Профили обоев рабочего пространства</div>
-                  <div style="font-size: 12px; color: var(--text-dim); margin-top: 3px;">Управление пользовательскими изображениями и фонами</div>
-                </div>
-                <button class="kpm-btn-primary" id="btn-jump-to-wallpapers" style="padding: 7px 16px; font-size: 12.5px;">
-                  Перейти к профилям
-                </button>
               </div>
 
             </div>
@@ -834,6 +663,118 @@
         <button type="submit" class="lock-submit-btn" id="btn-unlock">Войти</button>
       </form>
       <div id="lock-error-msg" class="lock-error-msg" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- GOOGLE ACCOUNT & MASTER KEY ENCLAVE MODAL -->
+  <div class="kpm-modal-overlay" id="modal-google-auth" style="display: none;">
+    <div class="kpm-modal-card kpm-google-modal-card">
+      <button class="kpm-modal-close" id="btn-close-google-modal">✕</button>
+
+      <!-- Header with Google brand colors -->
+      <div class="kpm-google-modal-header">
+        <div class="kpm-google-g-badge">
+          <svg viewBox="0 0 48 48" width="28" height="28">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="kpm-google-modal-title">Google Аккаунт & Мастер-ключ</h2>
+          <p class="kpm-google-modal-subtitle">Аппаратное DPAPI-запечатывание мастер-ключа и облачный профиль</p>
+        </div>
+      </div>
+
+      <!-- Content when Signed In -->
+      <div id="google-signed-in-section">
+        <div class="kpm-google-user-box">
+          <div class="kpm-google-user-avatar-wrap">
+            <img id="google-modal-user-avatar" src="" alt="Google Photo">
+            <div class="kpm-google-online-indicator"></div>
+          </div>
+          <div class="kpm-google-user-details">
+            <div class="kpm-google-user-name" id="google-modal-user-name">hddfi</div>
+            <div class="kpm-google-user-email" id="google-modal-user-email">hddfi@gmail.com</div>
+            <div class="kpm-google-user-sub" id="google-modal-user-sub">Google UID: sub_108429583192</div>
+          </div>
+        </div>
+
+        <!-- Cryptographic Enclave Card -->
+        <div class="kpm-enclave-card">
+          <div class="kpm-enclave-title">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+            <span>Статус криптографической защиты Мастер-ключа</span>
+          </div>
+          <div class="kpm-enclave-row">
+            <span class="kpm-enclave-key">Статус ключа:</span>
+            <span class="kpm-enclave-val active" id="google-enclave-status">✓ Запечатан в анклаве (Sealed)</span>
+          </div>
+          <div class="kpm-enclave-row">
+            <span class="kpm-enclave-key">Архитектура:</span>
+            <span class="kpm-enclave-val">Zero-Knowledge Envelope (AES-256-GCM + DPAPI)</span>
+          </div>
+          <div class="kpm-enclave-row">
+            <span class="kpm-enclave-key">Привязка:</span>
+            <span class="kpm-enclave-val">Google Identity UID + Windows Machine Key</span>
+          </div>
+          <div class="kpm-enclave-row">
+            <span class="kpm-enclave-key">Ввод пароля:</span>
+            <span class="kpm-enclave-val">Скрыт • Автоматический вход через Google</span>
+          </div>
+        </div>
+
+        <div class="kpm-google-modal-actions">
+          <button class="kpm-btn-secondary" id="btn-google-export-kit">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Аварийный ключ (Kit)</span>
+          </button>
+          <button class="kpm-btn-secondary" id="btn-google-switch-acc">
+            <span>Сменить аккаунт</span>
+          </button>
+          <button class="kpm-btn-secondary" id="btn-google-signout" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+            <span>Отвязать / Выйти</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Content when Signed Out / Form to Sign in -->
+      <div id="google-signed-out-section" style="display: none;">
+        <div class="kpm-google-info-alert">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#00e5ff" stroke-width="2" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <div>
+            <strong>Профессиональное сокрытие Мастер-ключа</strong>:
+            Вместо постоянного ввода пароля вручную, ключ запечатывается в криптографическом конверте (AES-256-GCM) и привязывается к токену вашего Google-аккаунта и аппаратному DPAPI Windows.
+          </div>
+        </div>
+
+        <div class="kpm-form-group" style="margin-bottom: 12px;">
+          <label class="kpm-form-label">Google Email</label>
+          <input type="email" id="input-google-email" class="kpm-form-input" placeholder="user@gmail.com" value="hddfi@gmail.com" style="width: 100%;">
+        </div>
+        <div class="kpm-form-group" style="margin-bottom: 12px;">
+          <label class="kpm-form-label">Имя аккаунта</label>
+          <input type="text" id="input-google-name" class="kpm-form-input" placeholder="Имя профиля" value="hddfi" style="width: 100%;">
+        </div>
+        <div class="kpm-form-group" style="margin-bottom: 14px;">
+          <label class="kpm-form-label">Аватар Google профиля</label>
+          <div class="kpm-avatar-presets-row" id="google-avatar-presets">
+            <!-- Preset avatars will be rendered here -->
+          </div>
+        </div>
+
+        <button class="kpm-google-primary-btn" id="btn-google-signin-submit">
+          <svg viewBox="0 0 48 48" width="20" height="20">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          <span>Войти через Google и запечатать ключ</span>
+        </button>
+      </div>
+
     </div>
   </div>
 

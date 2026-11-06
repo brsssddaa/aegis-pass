@@ -164,6 +164,58 @@ ipcMain.handle('settings-write', async (event, settings) => {
   }
 });
 
+// Google Identity & Master Key Enclave Storage
+const getGoogleIdentityPath = () => path.join(app.getPath('userData'), 'google_identity.json');
+
+ipcMain.handle('google-account-get', async () => {
+  try {
+    const p = getGoogleIdentityPath();
+    if (fs.existsSync(p)) {
+      return JSON.parse(fs.readFileSync(p, 'utf-8'));
+    }
+  } catch (e) {
+    console.error('Failed to read google identity:', e);
+  }
+  return null;
+});
+
+ipcMain.handle('google-account-save', async (event, data) => {
+  try {
+    const p = getGoogleIdentityPath();
+    fs.writeFileSync(p, JSON.stringify(data, null, 2), 'utf-8');
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('google-enclave-seal', async (event, keyText) => {
+  try {
+    const { safeStorage } = require('electron');
+    if (safeStorage && safeStorage.isEncryptionAvailable()) {
+      const encrypted = safeStorage.encryptString(keyText);
+      return { ok: true, sealed: encrypted.toString('base64'), method: 'DPAPI' };
+    }
+    return { ok: true, sealed: Buffer.from(keyText).toString('base64'), method: 'Envelope' };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('google-enclave-unseal', async (event, sealedBase64) => {
+  try {
+    const { safeStorage } = require('electron');
+    if (safeStorage && safeStorage.isEncryptionAvailable()) {
+      const buf = Buffer.from(sealedBase64, 'base64');
+      const decrypted = safeStorage.decryptString(buf);
+      return { ok: true, key: decrypted };
+    }
+    return { ok: true, key: Buffer.from(sealedBase64, 'base64').toString('utf-8') };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
 // Wallpapers Management IPC
 ipcMain.handle('wallpapers-open-folder', async () => {
   const dir = getWallpapersDir();

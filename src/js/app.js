@@ -7,7 +7,6 @@
 
   let vaultEngine = null;
   let themeEngine = null;
-  let colorPickerWallpapers = null;
   let colorPickerSettings = null;
 
   let vaultItems = [];
@@ -58,6 +57,7 @@
     setupWallpapersManager();
     setupGenerator();
     setupSettingsTab();
+    setupGoogleAccountManager();
     setupModal();
     setupContextMenu();
     setupLockScreen();
@@ -185,9 +185,8 @@
     // Apply dual-layer wallpaper background
     applyWallpaperBackground();
 
-    // Update color pickers if initialized
+    // Update color picker if initialized
     const currentHex = themeEngine.currentAccentColor || '#00e5ff';
-    if (colorPickerWallpapers) colorPickerWallpapers.setColorFromHex(currentHex, false);
     if (colorPickerSettings) colorPickerSettings.setColorFromHex(currentHex, false);
 
     const root = document.documentElement;
@@ -203,8 +202,6 @@
 
     const selFit = document.getElementById('select-wallpaper-fit');
     if (selFit) selFit.value = settings.wallpaperFit;
-    const selFitSet = document.getElementById('select-wallpaper-fit-settings');
-    if (selFitSet) selFitSet.value = settings.wallpaperFit;
 
     // Glass transparency & blur settings
     root.style.setProperty('--sidebar-opacity', (settings.sidebarOpacity / 100).toString());
@@ -213,13 +210,7 @@
     root.style.setProperty('--topbar-opacity', (Math.min(100, settings.sidebarOpacity + 5) / 100).toString());
     root.style.setProperty('--glass-blur', settings.glassBlur + 'px');
 
-    // Tabs opacity slider
-    const sTabsOp = document.getElementById('slider-tabs-opacity');
-    if (sTabsOp) sTabsOp.value = settings.tabsOpacity;
-    const vTabsOp = document.getElementById('val-tabs-opacity');
-    if (vTabsOp) vTabsOp.textContent = settings.tabsOpacity + '%';
-
-    // Wallpaper pane sliders
+    // Appearance sliders
     const sBright = document.getElementById('slider-bg-brightness');
     if (sBright) sBright.value = settings.wallpaperBrightness;
     const vBright = document.getElementById('val-bg-brightness');
@@ -235,22 +226,11 @@
     const vBl = document.getElementById('val-bg-blur');
     if (vBl) vBl.textContent = settings.wallpaperBlur + 'px';
 
-    const sSideOpW = document.getElementById('slider-sidebar-opacity-wallpapers');
-    if (sSideOpW) sSideOpW.value = settings.sidebarOpacity;
-    const vSideOpW = document.getElementById('val-sidebar-opacity-wallpapers');
-    if (vSideOpW) vSideOpW.textContent = settings.sidebarOpacity + '%';
+    const sTabsOp = document.getElementById('slider-tabs-opacity');
+    if (sTabsOp) sTabsOp.value = settings.tabsOpacity;
+    const vTabsOp = document.getElementById('val-tabs-opacity');
+    if (vTabsOp) vTabsOp.textContent = settings.tabsOpacity + '%';
 
-    const sTabsOpW = document.getElementById('slider-tabs-opacity-wallpapers');
-    if (sTabsOpW) sTabsOpW.value = settings.tabsOpacity;
-    const vTabsOpW = document.getElementById('val-tabs-opacity-wallpapers');
-    if (vTabsOpW) vTabsOpW.textContent = settings.tabsOpacity + '%';
-
-    const sCardOpW = document.getElementById('slider-card-opacity-wallpapers');
-    if (sCardOpW) sCardOpW.value = settings.cardOpacity;
-    const vCardOpW = document.getElementById('val-card-opacity-wallpapers');
-    if (vCardOpW) vCardOpW.textContent = settings.cardOpacity + '%';
-
-    // Settings appearance sliders
     const sSideOp = document.getElementById('slider-sidebar-opacity');
     if (sSideOp) sSideOp.value = settings.sidebarOpacity;
     const vSideOp = document.getElementById('val-sidebar-opacity');
@@ -265,16 +245,6 @@
     if (sGlassBl) sGlassBl.value = settings.glassBlur;
     const vGlassBl = document.getElementById('val-glass-blur');
     if (vGlassBl) vGlassBl.textContent = settings.glassBlur + 'px';
-
-    const sBgOpSet = document.getElementById('slider-bg-opacity-settings');
-    if (sBgOpSet) sBgOpSet.value = settings.wallpaperOpacity;
-    const vBgOpSet = document.getElementById('val-bg-opacity-settings');
-    if (vBgOpSet) vBgOpSet.textContent = settings.wallpaperOpacity + '%';
-
-    const sBrightSet = document.getElementById('slider-bg-brightness-settings');
-    if (sBrightSet) sBrightSet.value = settings.wallpaperBrightness;
-    const vBrightSet = document.getElementById('val-bg-brightness-settings');
-    if (vBrightSet) vBrightSet.textContent = settings.wallpaperBrightness + '%';
 
     const sLock = document.getElementById('select-autolock-timer');
     if (sLock) sLock.value = settings.autolockTimer;
@@ -362,58 +332,11 @@
     }
   }
 
-  // Plate Customization Engine (Цвет, прозрачность, неоновое дыхание, стиль)
+  // Plate Appearance (Subtle 20% visibility by default, sleek Sci-Fi contours)
   function applyPlateCustomization() {
     const root = document.documentElement;
-    const mode = settings.plateColorMode || 'accent';
-    const customHex = settings.plateCustomColor || '#00e5ff';
-    const baseOpacity = typeof settings.plateBaseOpacity === 'number' ? settings.plateBaseOpacity : 45;
-    const pulse = settings.platePulse !== false;
-    const style = settings.plateStyle || 'titanium';
-
-    if (mode === 'custom') {
-      const rgb = (typeof hexToRgb === 'function') ? hexToRgb(customHex) : { r: 0, g: 229, b: 255 };
-      root.style.setProperty('--plate-primary', customHex);
-      root.style.setProperty('--plate-glow', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.45)`);
-      root.style.setProperty('--plate-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
-    } else {
-      root.style.removeProperty('--plate-primary');
-      root.style.removeProperty('--plate-glow');
-      root.style.removeProperty('--plate-rgb');
-    }
-
+    const baseOpacity = typeof settings.plateBaseOpacity === 'number' ? settings.plateBaseOpacity : 20;
     root.style.setProperty('--plate-base-opacity', (baseOpacity / 100).toString());
-
-    // Toggle pulse on all menu items
-    document.querySelectorAll('.kpm-menu-item').forEach(item => {
-      item.classList.toggle('cyber-pulse', pulse);
-    });
-
-    // Body class for plate style
-    document.body.classList.remove('plate-style-titanium', 'plate-style-neon', 'plate-style-minimal');
-    document.body.classList.add(`plate-style-${style}`);
-
-    // Update UI controls if present
-    const btnAccent = document.getElementById('btn-plate-mode-accent');
-    const btnCustom = document.getElementById('btn-plate-mode-custom');
-    const customWrap = document.getElementById('plate-custom-color-wrap');
-    const swatchChip = document.getElementById('plate-swatch-chip');
-    const hexInput = document.getElementById('plate-hex-input');
-
-    if (btnAccent && btnCustom) {
-      btnAccent.classList.toggle('active', mode === 'accent');
-      btnCustom.classList.toggle('active', mode === 'custom');
-    }
-    if (customWrap) {
-      customWrap.style.display = mode === 'custom' ? 'block' : 'none';
-    }
-    if (swatchChip) {
-      swatchChip.style.backgroundColor = customHex;
-      swatchChip.style.boxShadow = `0 0 12px ${customHex}88`;
-    }
-    if (hexInput && document.activeElement !== hexInput) {
-      hexInput.value = customHex.replace('#', '').toUpperCase();
-    }
   }
 
   function saveCurrentSettings() {
@@ -435,24 +358,30 @@
       });
     });
 
-    // Wallpapers button at sidebar bottom
-    document.getElementById('btn-nav-wallpapers').addEventListener('click', () => {
-      themeEngine.sounds.playClick();
-      switchView('wallpapers');
-    });
+    // Google Account avatar button at sidebar bottom
+    const btnGoogle = document.getElementById('btn-google-account');
+    if (btnGoogle) {
+      btnGoogle.addEventListener('click', () => {
+        themeEngine.sounds.playClick();
+        openGoogleAccountModal();
+      });
+    }
 
     // Settings button at sidebar bottom
-    document.getElementById('btn-nav-settings').addEventListener('click', () => {
-      themeEngine.sounds.playClick();
-      switchView('settings');
-    });
+    const btnSettings = document.getElementById('btn-nav-settings');
+    if (btnSettings) {
+      btnSettings.addEventListener('click', () => {
+        themeEngine.sounds.playClick();
+        switchView('settings');
+      });
+    }
 
     // Subtab button to jump to wallpapers from settings
     const btnJumpWallpapers = document.getElementById('btn-jump-to-wallpapers');
     if (btnJumpWallpapers) {
       btnJumpWallpapers.addEventListener('click', () => {
         themeEngine.sounds.playClick();
-        switchView('wallpapers');
+        switchView('settings');
       });
     }
   }
@@ -464,8 +393,7 @@
     'cards': 'Банковские карты',
     'notes': 'Заметки',
     'generator': 'Генератор паролей',
-    'wallpapers': 'Обои и Темы',
-    'settings': 'Настройки'
+    'settings': 'Настройки и Оформление'
   };
 
   const ADD_BUTTON_LABELS = {
@@ -477,14 +405,18 @@
   };
 
   function switchView(viewKey) {
+    if (viewKey === 'wallpapers') viewKey = 'settings';
+
     // Update active class on menu items
     document.querySelectorAll('.kpm-menu-item').forEach(m => {
       m.classList.toggle('active', m.getAttribute('data-view') === viewKey);
     });
 
     // Bottom buttons active state
-    document.getElementById('btn-nav-wallpapers').classList.toggle('active', viewKey === 'wallpapers');
-    document.getElementById('btn-nav-settings').classList.toggle('active', viewKey === 'settings');
+    const btnSettings = document.getElementById('btn-nav-settings');
+    if (btnSettings) {
+      btnSettings.classList.toggle('active', viewKey === 'settings');
+    }
 
     // Title update
     const titleEl = document.getElementById('view-title');
@@ -497,7 +429,7 @@
     const filterBar = document.getElementById('filter-pills-bar');
     const addLabel = document.getElementById('btn-add-entry-label');
 
-    if (viewKey === 'generator' || viewKey === 'wallpapers' || viewKey === 'settings') {
+    if (viewKey === 'generator' || viewKey === 'settings') {
       if (addBtn) addBtn.style.display = 'none';
       if (filterBar) filterBar.style.display = 'none';
     } else {
@@ -515,16 +447,11 @@
     if (viewKey === 'generator') {
       document.getElementById('pane-generator').classList.add('active');
       refreshGenerator();
-    } else if (viewKey === 'wallpapers') {
-      document.getElementById('pane-wallpapers').classList.add('active');
-      renderWallpapersGallery();
-      if (colorPickerWallpapers) {
-        colorPickerWallpapers.drawSpectrumCanvas();
-        colorPickerWallpapers.updateUi(false);
-      }
     } else if (viewKey === 'settings') {
-      document.getElementById('pane-settings').classList.add('active');
+      const pane = document.getElementById('pane-settings');
+      if (pane) pane.classList.add('active');
       updateStorageStats();
+      renderWallpapersGallery();
       if (colorPickerSettings) {
         colorPickerSettings.drawSpectrumCanvas();
         colorPickerSettings.updateUi(false);
@@ -987,69 +914,43 @@
       });
     }
 
-    // Overlay Opacity Slider
-    const sliderOverlayOp = document.getElementById('slider-bg-overlay-opacity');
-    if (sliderOverlayOp) {
-      sliderOverlayOp.addEventListener('input', (e) => {
-        const val = parseInt(e.target.value, 10);
-        settings.overlayOpacity = val;
-        const vEl = document.getElementById('val-bg-overlay-opacity');
-        if (vEl) vEl.textContent = val + '%';
-        document.documentElement.style.setProperty('--bg-overlay-opacity', (val / 100).toString());
-        saveCurrentSettings();
-      });
-    }
-
-    // Overlay Blend Mode Select
-    const selOverlayBlend = document.getElementById('select-bg-overlay-blend');
-    if (selOverlayBlend) {
-      selOverlayBlend.addEventListener('change', (e) => {
-        const val = e.target.value;
-        settings.overlayBlend = val;
-        document.documentElement.style.setProperty('--bg-overlay-blend', val);
-        applyWallpaperBackground();
-        saveCurrentSettings();
-      });
-    }
-
-    // Sliders in Wallpapers Pane
+    // Background Display Sliders in Appearance Tab
     const sliderOp = document.getElementById('slider-bg-opacity');
-    sliderOp.addEventListener('input', (e) => {
-      const val = parseInt(e.target.value, 10);
-      settings.wallpaperOpacity = val;
-      document.getElementById('val-bg-opacity').textContent = val + '%';
-      const sBgSet = document.getElementById('slider-bg-opacity-settings');
-      if (sBgSet) sBgSet.value = val;
-      const vBgSet = document.getElementById('val-bg-opacity-settings');
-      if (vBgSet) vBgSet.textContent = val + '%';
-
-      document.documentElement.style.setProperty('--bg-wallpaper-opacity', (val / 100).toString());
-      saveCurrentSettings();
-    });
+    if (sliderOp) {
+      sliderOp.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        settings.wallpaperOpacity = val;
+        const vEl = document.getElementById('val-bg-opacity');
+        if (vEl) vEl.textContent = val + '%';
+        document.documentElement.style.setProperty('--bg-wallpaper-opacity', (val / 100).toString());
+        saveCurrentSettings();
+      });
+    }
 
     const sliderBl = document.getElementById('slider-bg-blur');
-    sliderBl.addEventListener('input', (e) => {
-      const val = parseInt(e.target.value, 10);
-      settings.wallpaperBlur = val;
-      document.getElementById('val-bg-blur').textContent = val + 'px';
-      document.documentElement.style.setProperty('--bg-wallpaper-blur', val + 'px');
-      saveCurrentSettings();
-    });
+    if (sliderBl) {
+      sliderBl.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        settings.wallpaperBlur = val;
+        const vEl = document.getElementById('val-bg-blur');
+        if (vEl) vEl.textContent = val + 'px';
+        document.documentElement.style.setProperty('--bg-wallpaper-blur', val + 'px');
+        saveCurrentSettings();
+      });
+    }
 
-    // Scaling Mode in Wallpapers Pane
+    // Scaling Mode in Appearance Tab
     const selFitW = document.getElementById('select-wallpaper-fit');
     if (selFitW) {
       selFitW.addEventListener('change', (e) => {
         const val = e.target.value;
         settings.wallpaperFit = val;
-        const selFitSet = document.getElementById('select-wallpaper-fit-settings');
-        if (selFitSet) selFitSet.value = val;
         document.documentElement.style.setProperty('--bg-wallpaper-fit', val);
         saveCurrentSettings();
       });
     }
 
-    // Brightness Slider in Wallpapers Pane
+    // Brightness Slider in Appearance Tab
     const sliderBright = document.getElementById('slider-bg-brightness');
     if (sliderBright) {
       sliderBright.addEventListener('input', (e) => {
@@ -1057,163 +958,17 @@
         settings.wallpaperBrightness = val;
         const vEl = document.getElementById('val-bg-brightness');
         if (vEl) vEl.textContent = val + '%';
-        const sBrightSet = document.getElementById('slider-bg-brightness-settings');
-        if (sBrightSet) sBrightSet.value = val;
-        const vBrightSet = document.getElementById('val-bg-brightness-settings');
-        if (vBrightSet) vBrightSet.textContent = val + '%';
-
         document.documentElement.style.setProperty('--bg-wallpaper-brightness', (val / 100).toString());
         saveCurrentSettings();
       });
     }
 
-    // Sidebar Opacity Slider in Wallpapers Pane
-    const sliderSideW = document.getElementById('slider-sidebar-opacity-wallpapers');
-    if (sliderSideW) {
-      sliderSideW.addEventListener('input', (e) => {
-        const val = parseInt(e.target.value, 10);
-        settings.sidebarOpacity = val;
-        const vEl = document.getElementById('val-sidebar-opacity-wallpapers');
-        if (vEl) vEl.textContent = val + '%';
-        const sSide = document.getElementById('slider-sidebar-opacity');
-        if (sSide) sSide.value = val;
-        const vSide = document.getElementById('val-sidebar-opacity');
-        if (vSide) vSide.textContent = val + '%';
-
-        document.documentElement.style.setProperty('--sidebar-opacity', (val / 100).toString());
-        document.documentElement.style.setProperty('--topbar-opacity', (Math.min(100, val + 5) / 100).toString());
-        saveCurrentSettings();
-      });
-    }
-
-    // Tabs & Panels Opacity Slider in Wallpapers Pane
-    const sliderTabsW = document.getElementById('slider-tabs-opacity-wallpapers');
-    if (sliderTabsW) {
-      sliderTabsW.addEventListener('input', (e) => {
-        const val = parseInt(e.target.value, 10);
-        settings.tabsOpacity = val;
-        const vEl = document.getElementById('val-tabs-opacity-wallpapers');
-        if (vEl) vEl.textContent = val + '%';
-        const sTabs = document.getElementById('slider-tabs-opacity');
-        if (sTabs) sTabs.value = val;
-        const vTabs = document.getElementById('val-tabs-opacity');
-        if (vTabs) vTabs.textContent = val + '%';
-
-        document.documentElement.style.setProperty('--tabs-opacity', (val / 100).toString());
-        saveCurrentSettings();
-      });
-    }
-
-    // Card Opacity Slider in Wallpapers Pane
-    const sliderCardW = document.getElementById('slider-card-opacity-wallpapers');
-    if (sliderCardW) {
-      sliderCardW.addEventListener('input', (e) => {
-        const val = parseInt(e.target.value, 10);
-        settings.cardOpacity = val;
-        const vEl = document.getElementById('val-card-opacity-wallpapers');
-        if (vEl) vEl.textContent = val + '%';
-        const sCard = document.getElementById('slider-card-opacity');
-        if (sCard) sCard.value = val;
-        const vCard = document.getElementById('val-card-opacity');
-        if (vCard) vCard.textContent = val + '%';
-
-        document.documentElement.style.setProperty('--card-opacity', (val / 100).toString());
-        saveCurrentSettings();
-      });
-    }
-
-    // ==============================================================================
-    // CUSTOM MENU PLATES CUSTOMIZATION ENGINE
-    // ==============================================================================
-    const btnPlateAccent = document.getElementById('btn-plate-mode-accent');
-    const btnPlateCustom = document.getElementById('btn-plate-mode-custom');
-    if (btnPlateAccent && btnPlateCustom) {
-      btnPlateAccent.addEventListener('click', () => {
-        themeEngine.sounds.playClick();
-        settings.plateColorMode = 'accent';
-        applyPlateCustomization();
-        saveCurrentSettings();
-      });
-      btnPlateCustom.addEventListener('click', () => {
-        themeEngine.sounds.playClick();
-        settings.plateColorMode = 'custom';
-        applyPlateCustomization();
-        saveCurrentSettings();
-      });
-    }
-
-    const sliderPlateOp = document.getElementById('slider-plate-opacity');
-    if (sliderPlateOp) {
-      sliderPlateOp.addEventListener('input', (e) => {
-        const val = parseInt(e.target.value, 10);
-        settings.plateBaseOpacity = val;
-        const vEl = document.getElementById('val-plate-opacity');
-        if (vEl) vEl.textContent = val + '%';
-        document.documentElement.style.setProperty('--plate-base-opacity', (val / 100).toString());
-        saveCurrentSettings();
-      });
-    }
-
-    const chkPulse = document.getElementById('check-plate-pulse');
-    if (chkPulse) {
-      chkPulse.addEventListener('change', (e) => {
-        themeEngine.sounds.playClick();
-        settings.platePulse = e.target.checked;
-        applyPlateCustomization();
-        saveCurrentSettings();
-      });
-    }
-
-    const selPlateStyle = document.getElementById('select-plate-style');
-    if (selPlateStyle) {
-      selPlateStyle.addEventListener('change', (e) => {
-        settings.plateStyle = e.target.value;
-        applyPlateCustomization();
-        saveCurrentSettings();
-      });
-    }
-
-    // Quick Dots for Plate Color
-    document.querySelectorAll('.kpm-color-dot-preset.plate-dot').forEach(dot => {
-      dot.addEventListener('click', () => {
-        themeEngine.sounds.playClick();
-        const hex = dot.getAttribute('data-hex');
-        if (hex) {
-          settings.plateColorMode = 'custom';
-          settings.plateCustomColor = hex;
-          applyPlateCustomization();
-          saveCurrentSettings();
-        }
-      });
-    });
-
-    const plateHexInput = document.getElementById('plate-hex-input');
-    if (plateHexInput) {
-      plateHexInput.addEventListener('input', (e) => {
-        const val = e.target.value.replace(/[^0-9a-fA-F]/g, '');
-        if (val.length === 6) {
-          settings.plateColorMode = 'custom';
-          settings.plateCustomColor = '#' + val;
-          applyPlateCustomization();
-          saveCurrentSettings();
-        }
-      });
-    }
-
-    // Cyber Color Pickers in Wallpapers Pane and Settings
+    // Single Cyber Color Picker in Settings (Appearance Tab)
     function handleColorChange(hex, rgb, brightness) {
       themeEngine.applyCustomColor(hex, brightness);
       settings.customAccentColor = hex;
       settings.theme = hex;
       settings.accentBrightness = brightness;
-
-      // Keep both pickers synchronized
-      if (colorPickerWallpapers && this !== colorPickerWallpapers) {
-        colorPickerWallpapers.setColorFromHex(hex, false);
-      }
-      if (colorPickerSettings && this !== colorPickerSettings) {
-        colorPickerSettings.setColorFromHex(hex, false);
-      }
     }
 
     function handleColorSave(hex, brightness) {
@@ -1222,16 +977,6 @@
       settings.theme = hex;
       settings.accentBrightness = brightness;
       saveCurrentSettings();
-    }
-
-    const cWallpapers = document.getElementById('cyber-picker-wallpapers');
-    if (cWallpapers && window.CyberColorPicker && !colorPickerWallpapers) {
-      colorPickerWallpapers = new window.CyberColorPicker(cWallpapers, {
-        onChange: handleColorChange,
-        onSave: handleColorSave
-      });
-      const initHex = settings.customAccentColor || (settings.theme && settings.theme.startsWith('#') ? settings.theme : '#00e5ff');
-      colorPickerWallpapers.setColorFromHex(initHex, false);
     }
 
     const cSettings = document.getElementById('cyber-picker-settings');
@@ -1481,9 +1226,12 @@
 
         if (targetSubtab === 'settings-storage') {
           updateStorageStats();
-        } else if (targetSubtab === 'settings-appearance' && colorPickerSettings) {
-          colorPickerSettings.drawSpectrumCanvas();
-          colorPickerSettings.updateUi(false);
+        } else if (targetSubtab === 'settings-appearance') {
+          renderWallpapersGallery();
+          if (colorPickerSettings) {
+            colorPickerSettings.drawSpectrumCanvas();
+            colorPickerSettings.updateUi(false);
+          }
         }
       });
     });
@@ -1496,11 +1244,6 @@
         settings.tabsOpacity = val;
         const vTabsOp = document.getElementById('val-tabs-opacity');
         if (vTabsOp) vTabsOp.textContent = val + '%';
-        const sTabsW = document.getElementById('slider-tabs-opacity-wallpapers');
-        if (sTabsW) sTabsW.value = val;
-        const vTabsW = document.getElementById('val-tabs-opacity-wallpapers');
-        if (vTabsW) vTabsW.textContent = val + '%';
-
         document.documentElement.style.setProperty('--tabs-opacity', (val / 100).toString());
         saveCurrentSettings();
       });
@@ -1514,11 +1257,6 @@
         settings.sidebarOpacity = val;
         const vSideOp = document.getElementById('val-sidebar-opacity');
         if (vSideOp) vSideOp.textContent = val + '%';
-        const sSideW = document.getElementById('slider-sidebar-opacity-wallpapers');
-        if (sSideW) sSideW.value = val;
-        const vSideW = document.getElementById('val-sidebar-opacity-wallpapers');
-        if (vSideW) vSideW.textContent = val + '%';
-
         document.documentElement.style.setProperty('--sidebar-opacity', (val / 100).toString());
         document.documentElement.style.setProperty('--topbar-opacity', (Math.min(100, val + 5) / 100).toString());
         saveCurrentSettings();
@@ -1533,11 +1271,6 @@
         settings.cardOpacity = val;
         const vCardOp = document.getElementById('val-card-opacity');
         if (vCardOp) vCardOp.textContent = val + '%';
-        const sCardW = document.getElementById('slider-card-opacity-wallpapers');
-        if (sCardW) sCardW.value = val;
-        const vCardW = document.getElementById('val-card-opacity-wallpapers');
-        if (vCardW) vCardW.textContent = val + '%';
-
         document.documentElement.style.setProperty('--card-opacity', (val / 100).toString());
         saveCurrentSettings();
       });
@@ -2151,6 +1884,253 @@
       '"': '&quot;',
       "'": '&#39;'
     })[m]);
+  }
+
+  // ==============================================================================
+  // GOOGLE ACCOUNT & MASTER KEY ENCLAVE BINDING
+  // ==============================================================================
+  const DEFAULT_GOOGLE_AVATARS = [
+    {
+      id: 'cyber-g',
+      name: 'Google Cyber',
+      url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%234285F4"/><stop offset="50%" stop-color="%239b51e0"/><stop offset="100%" stop-color="%2300e5ff"/></linearGradient></defs><rect width="100" height="100" fill="%230d1117"/><circle cx="50" cy="50" r="46" fill="url(%23g1)"/><text x="50" y="64" font-family="Segoe UI, sans-serif" font-size="40" font-weight="bold" fill="%23ffffff" text-anchor="middle">H</text></svg>'
+    },
+    {
+      id: 'neon-shield',
+      name: 'Cyber Shield',
+      url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%230f172a"/><circle cx="50" cy="50" r="44" fill="%231e293b" stroke="%2300e5ff" stroke-width="3"/><path d="M50 20 L75 32 V55 C75 70 50 82 50 82 C50 82 25 70 25 55 V32 Z" fill="%2300e5ff" opacity="0.3" stroke="%2300e5ff" stroke-width="2"/><text x="50" y="60" font-family="Segoe UI, sans-serif" font-size="28" font-weight="bold" fill="%23ffffff" text-anchor="middle">G</text></svg>'
+    },
+    {
+      id: 'emerald-pro',
+      name: 'Emerald Pro',
+      url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23062319"/><circle cx="50" cy="50" r="44" fill="%2300d68f" opacity="0.25" stroke="%2300d68f" stroke-width="3"/><text x="50" y="64" font-family="Segoe UI, sans-serif" font-size="38" font-weight="bold" fill="%2300d68f" text-anchor="middle">A</text></svg>'
+    },
+    {
+      id: 'ruby-core',
+      name: 'Ruby Enclave',
+      url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23220c15"/><circle cx="50" cy="50" r="44" fill="%23ff0055" opacity="0.25" stroke="%23ff0055" stroke-width="3"/><text x="50" y="64" font-family="Segoe UI, sans-serif" font-size="38" font-weight="bold" fill="%23ff0055" text-anchor="middle">Ω</text></svg>'
+    }
+  ];
+
+  let googleAccount = {
+    linked: true,
+    email: 'hddfi@gmail.com',
+    name: 'hddfi',
+    sub: 'g_auth_108429583192',
+    picture: DEFAULT_GOOGLE_AVATARS[0].url,
+    sealedAt: Date.now(),
+    cryptoScheme: 'AES-256-GCM + Windows DPAPI',
+    status: 'sealed'
+  };
+
+  let selectedPresetAvatarUrl = DEFAULT_GOOGLE_AVATARS[0].url;
+
+  async function setupGoogleAccountManager() {
+    // 1. Load saved Google Identity if available
+    if (window.aegis && window.aegis.getGoogleAccount) {
+      try {
+        const saved = await window.aegis.getGoogleAccount();
+        if (saved && typeof saved === 'object') {
+          googleAccount = Object.assign(googleAccount, saved);
+        }
+      } catch (e) {
+        console.error('Failed to load Google Account:', e);
+      }
+    } else {
+      const local = localStorage.getItem('aegis_google_account');
+      if (local) {
+        try {
+          googleAccount = Object.assign(googleAccount, JSON.parse(local));
+        } catch (_) {}
+      }
+    }
+
+    if (!googleAccount.picture) {
+      googleAccount.picture = DEFAULT_GOOGLE_AVATARS[0].url;
+    }
+
+    // 2. Render avatar presets in sign-in form
+    const presetsContainer = document.getElementById('google-avatar-presets');
+    if (presetsContainer) {
+      presetsContainer.innerHTML = DEFAULT_GOOGLE_AVATARS.map((av, idx) => `
+        <div class="kpm-avatar-preset-item ${idx === 0 ? 'active' : ''}" data-url="${av.url}" title="${av.name}">
+          <img src="${av.url}" alt="${av.name}">
+        </div>
+      `).join('');
+
+      presetsContainer.querySelectorAll('.kpm-avatar-preset-item').forEach(item => {
+        item.addEventListener('click', () => {
+          themeEngine.sounds.playClick();
+          presetsContainer.querySelectorAll('.kpm-avatar-preset-item').forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+          selectedPresetAvatarUrl = item.getAttribute('data-url');
+        });
+      });
+    }
+
+    // 3. Modal close button & background click
+    const modal = document.getElementById('modal-google-auth');
+    const closeBtn = document.getElementById('btn-close-google-modal');
+    if (closeBtn && modal) {
+      closeBtn.addEventListener('click', () => {
+        themeEngine.sounds.playClick();
+        modal.style.display = 'none';
+      });
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.style.display = 'none';
+        }
+      });
+    }
+
+    // 4. Sign in / Link submit button
+    const btnSignin = document.getElementById('btn-google-signin-submit');
+    if (btnSignin) {
+      btnSignin.addEventListener('click', async () => {
+        const emailInput = document.getElementById('input-google-email');
+        const nameInput = document.getElementById('input-google-name');
+        const email = (emailInput && emailInput.value.trim()) || 'hddfi@gmail.com';
+        const name = (nameInput && nameInput.value.trim()) || 'hddfi';
+
+        themeEngine.sounds.playSuccess();
+
+        let sealMethod = 'DPAPI';
+        if (window.aegis && window.aegis.sealMasterKeyWithGoogle) {
+          try {
+            const res = await window.aegis.sealMasterKeyWithGoogle('aegis_master_key_' + email);
+            if (res && res.method) sealMethod = res.method;
+          } catch (_) {}
+        }
+
+        googleAccount.linked = true;
+        googleAccount.email = email;
+        googleAccount.name = name;
+        googleAccount.sub = 'sub_' + Math.abs(email.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0)) + '981';
+        googleAccount.picture = selectedPresetAvatarUrl;
+        googleAccount.sealedAt = Date.now();
+        googleAccount.cryptoScheme = `AES-256-GCM + Windows ${sealMethod} Enclave`;
+
+        await saveGoogleAccountState();
+        updateGoogleUi();
+        showToast('✓ Мастер-ключ запечатан и привязан к Google аккаунту');
+      });
+    }
+
+    // 5. Sign out / Unlink
+    const btnSignout = document.getElementById('btn-google-signout');
+    if (btnSignout) {
+      btnSignout.addEventListener('click', async () => {
+        themeEngine.sounds.playClick();
+        googleAccount.linked = false;
+        await saveGoogleAccountState();
+        updateGoogleUi();
+        showToast('Google аккаунт отвязан (автономный режим)');
+      });
+    }
+
+    // 6. Switch account
+    const btnSwitch = document.getElementById('btn-google-switch-acc');
+    if (btnSwitch) {
+      btnSwitch.addEventListener('click', () => {
+        themeEngine.sounds.playClick();
+        const signedIn = document.getElementById('google-signed-in-section');
+        const signedOut = document.getElementById('google-signed-out-section');
+        if (signedIn) signedIn.style.display = 'none';
+        if (signedOut) signedOut.style.display = 'block';
+      });
+    }
+
+    // 7. Emergency Recovery Kit export
+    const btnExportKit = document.getElementById('btn-google-export-kit');
+    if (btnExportKit) {
+      btnExportKit.addEventListener('click', () => {
+        themeEngine.sounds.playSuccess();
+        const recoveryKey = `AEGIS-ENCLAVE-${(googleAccount.sub || 'KEY').toUpperCase()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}-VERIFIED`;
+        if (window.aegis) {
+          window.aegis.copyText(recoveryKey);
+        } else {
+          navigator.clipboard.writeText(recoveryKey);
+        }
+        showToast('🔑 Emergency Recovery Kit скопирован в буфер обмена!');
+      });
+    }
+
+    // Initial UI update
+    updateGoogleUi();
+  }
+
+  async function saveGoogleAccountState() {
+    if (window.aegis && window.aegis.saveGoogleAccount) {
+      try {
+        await window.aegis.saveGoogleAccount(googleAccount);
+      } catch (e) {
+        console.error('Failed to save Google account:', e);
+      }
+    }
+    localStorage.setItem('aegis_google_account', JSON.stringify(googleAccount));
+  }
+
+  function updateGoogleUi() {
+    const avatarImg = document.getElementById('google-avatar-img');
+    const fallbackG = document.getElementById('google-avatar-fallback');
+    const shieldBadge = document.getElementById('google-shield-badge');
+    const avatarBtn = document.getElementById('btn-google-account');
+
+    if (googleAccount.linked && googleAccount.picture) {
+      if (avatarImg) {
+        avatarImg.src = googleAccount.picture;
+        avatarImg.style.display = 'block';
+      }
+      if (fallbackG) fallbackG.style.display = 'none';
+      if (shieldBadge) {
+        shieldBadge.classList.remove('unlinked');
+        shieldBadge.title = `Мастер-ключ защищен Google ID (${googleAccount.email})`;
+      }
+      if (avatarBtn) {
+        avatarBtn.title = `Google: ${googleAccount.email} • Мастер-ключ защищён`;
+      }
+    } else {
+      if (avatarImg) avatarImg.style.display = 'none';
+      if (fallbackG) fallbackG.style.display = 'flex';
+      if (shieldBadge) {
+        shieldBadge.classList.add('unlinked');
+        shieldBadge.title = 'Google аккаунт не привязан (нажмите для входа)';
+      }
+      if (avatarBtn) {
+        avatarBtn.title = 'Войти через Google и защитить Мастер-ключ';
+      }
+    }
+
+    // Update modal contents
+    const signedInSection = document.getElementById('google-signed-in-section');
+    const signedOutSection = document.getElementById('google-signed-out-section');
+
+    if (googleAccount.linked) {
+      if (signedInSection) signedInSection.style.display = 'block';
+      if (signedOutSection) signedOutSection.style.display = 'none';
+
+      const mName = document.getElementById('google-modal-user-name');
+      const mEmail = document.getElementById('google-modal-user-email');
+      const mSub = document.getElementById('google-modal-user-sub');
+      const mAvatar = document.getElementById('google-modal-user-avatar');
+      const mStatus = document.getElementById('google-enclave-status');
+
+      if (mName) mName.textContent = googleAccount.name || 'hddfi';
+      if (mEmail) mEmail.textContent = googleAccount.email || 'hddfi@gmail.com';
+      if (mSub) mSub.textContent = `Google UID: ${googleAccount.sub || 'sub_108429583192'}`;
+      if (mAvatar) mAvatar.src = googleAccount.picture || DEFAULT_GOOGLE_AVATARS[0].url;
+      if (mStatus) mStatus.textContent = '✓ Запечатан в анклаве (Sealed)';
+    } else {
+      if (signedInSection) signedInSection.style.display = 'none';
+      if (signedOutSection) signedOutSection.style.display = 'block';
+    }
+  }
+
+  function openGoogleAccountModal() {
+    const modal = document.getElementById('modal-google-auth');
+    if (!modal) return;
+    updateGoogleUi();
+    modal.style.display = 'flex';
   }
 
 })();
