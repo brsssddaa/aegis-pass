@@ -39,7 +39,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Aegis Pass"
+      "shortcutName": "Aegis Pass",
+      "artifactName": "AegisPass_Installer_${version}.${ext}"
     },
     "files": [
       "main.js",

@@ -8,6 +8,7 @@
   let vaultEngine = null;
   let themeEngine = null;
   let colorPickerSettings = null;
+  let cachedWallpapers = [];
 
   let vaultItems = [];
   let currentCategory = 'accounts'; // 'all' | 'accounts' | 'games' | 'cards' | 'notes'
@@ -38,7 +39,7 @@
     vaultEngine = new window.CryptoVaultEngine();
     themeEngine = new window.ThemeEngine();
 
-    // Load persisted settings
+    // Load persisted settings and wallpapers cache
     if (window.aegis) {
       try {
         const saved = await window.aegis.readSettings();
@@ -47,6 +48,15 @@
         }
       } catch (e) {
         console.error('Failed to load settings:', e);
+      }
+
+      // Preload wallpapers list immediately so active wallpaper applies on initial load!
+      try {
+        if (window.aegis.listWallpapers) {
+          cachedWallpapers = await window.aegis.listWallpapers();
+        }
+      } catch (e) {
+        console.error('Failed to preload wallpapers list:', e);
       }
     }
 
@@ -358,12 +368,13 @@
       });
     });
 
-    // Google Account avatar button at sidebar bottom
+    // Google Account avatar button at sidebar bottom (No popup window)
     const btnGoogle = document.getElementById('btn-google-account');
     if (btnGoogle) {
       btnGoogle.addEventListener('click', () => {
         themeEngine.sounds.playClick();
-        openGoogleAccountModal();
+        const email = (googleAccount && googleAccount.email) || 'hddfi@gmail.com';
+        showToast(`Google ID: ${email} • Мастер-ключ защищен`);
       });
     }
 
@@ -853,7 +864,6 @@
   // ==============================================================================
   // WALLPAPERS & PROFILES MANAGER
   // ==============================================================================
-  let cachedWallpapers = [];
 
   function setupWallpapersManager() {
     // Open Wallpapers Folder in Windows Explorer
@@ -2101,36 +2111,6 @@
       }
     }
 
-    // Update modal contents
-    const signedInSection = document.getElementById('google-signed-in-section');
-    const signedOutSection = document.getElementById('google-signed-out-section');
-
-    if (googleAccount.linked) {
-      if (signedInSection) signedInSection.style.display = 'block';
-      if (signedOutSection) signedOutSection.style.display = 'none';
-
-      const mName = document.getElementById('google-modal-user-name');
-      const mEmail = document.getElementById('google-modal-user-email');
-      const mSub = document.getElementById('google-modal-user-sub');
-      const mAvatar = document.getElementById('google-modal-user-avatar');
-      const mStatus = document.getElementById('google-enclave-status');
-
-      if (mName) mName.textContent = googleAccount.name || 'hddfi';
-      if (mEmail) mEmail.textContent = googleAccount.email || 'hddfi@gmail.com';
-      if (mSub) mSub.textContent = `Google UID: ${googleAccount.sub || 'sub_108429583192'}`;
-      if (mAvatar) mAvatar.src = googleAccount.picture || DEFAULT_GOOGLE_AVATARS[0].url;
-      if (mStatus) mStatus.textContent = '✓ Запечатан в анклаве (Sealed)';
-    } else {
-      if (signedInSection) signedInSection.style.display = 'none';
-      if (signedOutSection) signedOutSection.style.display = 'block';
-    }
-  }
-
-  function openGoogleAccountModal() {
-    const modal = document.getElementById('modal-google-auth');
-    if (!modal) return;
-    updateGoogleUi();
-    modal.style.display = 'flex';
   }
 
 })();
