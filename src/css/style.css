@@ -62,6 +62,7 @@ body {
   contain: strict;
 }
 
+/* Layer 1: Base Wallpaper */
 .kpm-bg-img {
   position: absolute;
   top: 0;
@@ -77,9 +78,35 @@ body {
   backface-visibility: hidden;
   image-rendering: -webkit-optimize-contrast;
   display: none;
+  z-index: 1;
 }
 
 .kpm-bg-img.active {
+  display: block;
+}
+
+/* Layer 2: Overlay / Frame Wallpaper (e.g. gothic chains, vignette, stars) */
+.kpm-bg-overlay-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: var(--bg-overlay-fit, cover);
+  object-position: center center;
+  opacity: var(--bg-overlay-opacity, 0.85);
+  mix-blend-mode: var(--bg-overlay-blend, screen);
+  filter: blur(var(--bg-overlay-blur, 0px)) brightness(var(--bg-overlay-brightness, 1));
+  transform: translate3d(0, 0, 0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  image-rendering: -webkit-optimize-contrast;
+  display: none;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.kpm-bg-overlay-img.active {
   display: block;
 }
 
@@ -87,6 +114,7 @@ body {
   position: absolute;
   inset: 0;
   background: radial-gradient(circle at 60% 40%, rgba(12, 16, 23, 0.72) 0%, rgba(12, 16, 23, 0.94) 100%);
+  z-index: 3;
 }
 
 /* ---------- Main Layout Grid ---------- */
@@ -224,23 +252,37 @@ body {
   background-image: url('../assets/menu_plate.png');
   background-size: 100% 100%;
   background-repeat: no-repeat;
-  opacity: 0.45;
+  opacity: var(--plate-base-opacity, 0.45);
   pointer-events: none;
   transition: opacity 0.2s ease, filter 0.2s ease;
   z-index: 0;
 }
 
-/* Accent neon tint layer for the plate frame */
+/* Accent/Custom neon tint layer for the plate frame */
 .kpm-menu-item .kpm-plate-glow {
   position: absolute;
   inset: 0;
-  background-color: var(--accent-primary);
+  background-color: var(--plate-primary, var(--accent-primary));
   -webkit-mask: url('../assets/menu_plate.png') no-repeat center / 100% 100%;
   mask: url('../assets/menu_plate.png') no-repeat center / 100% 100%;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease, filter 0.2s ease;
   z-index: 1;
+}
+
+/* Cyber Pulse breathing animation for active plate */
+@keyframes cyberPlatePulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px var(--plate-glow, var(--accent-glow))) brightness(1.15);
+  }
+  50% {
+    filter: drop-shadow(0 0 16px var(--plate-glow, var(--accent-glow))) brightness(1.42);
+  }
+}
+
+.kpm-menu-item.cyber-pulse.active .kpm-plate-glow {
+  animation: cyberPlatePulse 3.2s ease-in-out infinite;
 }
 
 /* Subtle dark glass backing inside plate */
@@ -268,7 +310,7 @@ body {
 
 .kpm-menu-item:hover .kpm-plate-glow {
   opacity: 0.55;
-  filter: drop-shadow(0 0 8px var(--accent-glow));
+  filter: drop-shadow(0 0 8px var(--plate-glow, var(--accent-glow)));
 }
 
 .kpm-menu-item:hover::after {
@@ -283,17 +325,26 @@ body {
 
 .kpm-menu-item.active::before {
   opacity: 1;
-  filter: drop-shadow(0 0 10px var(--accent-glow)) brightness(1.2);
+  filter: drop-shadow(0 0 10px var(--plate-glow, var(--accent-glow))) brightness(1.2);
 }
 
 .kpm-menu-item.active .kpm-plate-glow {
   opacity: 0.95;
-  filter: drop-shadow(0 0 12px var(--accent-glow));
+  filter: drop-shadow(0 0 12px var(--plate-glow, var(--accent-glow)));
 }
 
 .kpm-menu-item.active::after {
-  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.18) 0%, rgba(var(--accent-rgb), 0.04) 100%);
-  box-shadow: inset 0 0 14px rgba(var(--accent-rgb), 0.12);
+  background: linear-gradient(90deg, rgba(var(--plate-rgb, var(--accent-rgb)), 0.18) 0%, rgba(var(--plate-rgb, var(--accent-rgb)), 0.04) 100%);
+  box-shadow: inset 0 0 14px rgba(var(--plate-rgb, var(--accent-rgb)), 0.12);
+}
+
+/* Plate Style Options */
+body.plate-style-neon .kpm-menu-item.active .kpm-plate-glow {
+  filter: drop-shadow(0 0 16px var(--plate-glow, var(--accent-glow))) brightness(1.35);
+}
+body.plate-style-minimal .kpm-menu-item.active::after {
+  background: transparent;
+  box-shadow: none;
 }
 
 .kpm-menu-item svg {
@@ -968,36 +1019,49 @@ body {
   justify-content: space-between;
 }
 
-/* Square Profiles Grid */
+/* Widescreen Horizontal Profiles Grid (не квадратные, чуть меньше и шире) */
 .kpm-profiles-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
   margin-bottom: 18px;
 }
 
 .kpm-profile-card {
-  aspect-ratio: 1 / 1;
-  border-radius: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.08);
+  aspect-ratio: 16 / 9.5;
+  border-radius: 10px;
+  border: 1.5px solid rgba(255, 255, 255, 0.09);
   background: #0f141d;
   overflow: hidden;
   position: relative;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
 }
 
 .kpm-profile-card:hover {
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.35);
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
 }
 
-.kpm-profile-card.active {
+/* Active as Base Wallpaper */
+.kpm-profile-card.active-base {
   border-color: var(--accent-primary);
-  box-shadow: 0 0 16px rgba(0, 214, 143, 0.35);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+/* Active as Overlay Layer */
+.kpm-profile-card.active-overlay {
+  border-color: #d946ef;
+  box-shadow: 0 0 16px rgba(217, 70, 239, 0.45);
+}
+
+/* Active as both Base and Overlay */
+.kpm-profile-card.active-base.active-overlay {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 14px var(--accent-glow), 0 0 20px rgba(217, 70, 239, 0.5);
 }
 
 .kpm-profile-thumb {
@@ -1018,29 +1082,257 @@ body {
   color: var(--text-dim);
 }
 
-.kpm-profile-badge {
+/* Profile Badges: Base vs Overlay */
+.kpm-profile-badges-wrap {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.kpm-profile-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  text-transform: uppercase;
+}
+
+.kpm-profile-badge.base {
   background: var(--accent-primary);
   color: #04100b;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.kpm-profile-badge.overlay {
+  background: #d946ef;
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(217, 70, 239, 0.6);
 }
 
 .kpm-profile-footer {
-  padding: 8px 10px;
-  background: rgba(10, 14, 21, 0.92);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  font-size: 12px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 6px 9px;
+  background: linear-gradient(to top, rgba(9, 11, 16, 0.94) 0%, rgba(9, 11, 16, 0.5) 75%, transparent 100%);
+  font-size: 11.5px;
   font-weight: 600;
   color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  backdrop-filter: blur(2px);
+}
+
+/* Dual-Layer Status Info Bar */
+.kpm-layers-info-bar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: rgba(12, 16, 23, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.kpm-layer-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.kpm-layer-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.kpm-layer-dot.base {
+  background: var(--accent-primary);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.kpm-layer-dot.overlay {
+  background: #d946ef;
+  box-shadow: 0 0 8px rgba(217, 70, 239, 0.7);
+}
+
+.kpm-layer-chip b {
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.kpm-layer-remove-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.kpm-layer-remove-btn:hover {
+  background: rgba(244, 63, 94, 0.8);
+  border-color: #f43f5e;
+}
+
+.kpm-layer-settings-box {
+  background: rgba(14, 18, 26, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.kpm-layer-settings-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--accent-light);
+}
+
+/* Custom Cyber Select */
+.kpm-select-cyber {
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: border-color 0.18s ease;
+}
+
+.kpm-select-cyber:focus {
+  border-color: var(--accent-primary);
+}
+
+/* Custom Cyber Switch */
+.kpm-switch-wrap {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 22px;
+}
+
+.kpm-switch-wrap input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.kpm-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: .22s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 20px;
+}
+
+.kpm-switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #fff;
+  transition: .22s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 50%;
+}
+
+.kpm-switch-wrap input:checked + .kpm-switch-slider {
+  background-color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.kpm-switch-wrap input:checked + .kpm-switch-slider:before {
+  transform: translateX(20px);
+  background-color: #04100b;
+}
+
+/* Custom Wallpaper Context Menu (ПКМ) */
+.kpm-wp-context-menu {
+  position: fixed;
+  z-index: 1000;
+  background: rgba(14, 18, 26, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), 0 0 16px rgba(0, 229, 255, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  min-width: 230px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  user-select: none;
+  animation: fadeInFast 0.12s ease-out;
+}
+
+@keyframes fadeInFast {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.kpm-wp-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.kpm-wp-menu-item svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  stroke: currentColor;
+}
+
+.kpm-wp-menu-item:hover {
+  background: rgba(var(--accent-rgb, 0, 229, 255), 0.18);
+  color: #ffffff;
+}
+
+.kpm-wp-menu-item.danger:hover {
+  background: rgba(244, 63, 94, 0.2);
+  color: #ff6b81;
+}
+
+.kpm-wp-menu-separator {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 4px 0;
 }
 
 /* Wallpapers Action Bar */

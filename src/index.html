@@ -8,9 +8,13 @@
 </head>
 <body>
 
-  <!-- Custom Wallpaper Background Layer (like in C:\Scripts\minecraft-ai-bot) -->
+  <!-- Custom Dual-Layer Wallpaper Background Layer -->
   <div id="kpm-bg-layer" class="kpm-bg-layer">
+    <!-- Layer 1: Base Wallpaper -->
     <img id="kpm-bg-img" class="kpm-bg-img" alt="">
+    <!-- Layer 2: Overlay / Frame Wallpaper (Chains, Vignette, Stars) -->
+    <img id="kpm-bg-overlay-img" class="kpm-bg-overlay-img" alt="">
+    <!-- Ambient dark cyber vignette -->
     <div class="kpm-bg-overlay"></div>
   </div>
 
@@ -194,10 +198,11 @@
             <!-- Wallpaper Profiles Section -->
             <div class="kpm-section-card">
               <div class="kpm-section-header">
-                <span>Профили фона и обои</span>
+                <span>Профили фона и обоев</span>
+                <span class="kpm-badge" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">ЛКМ — Основа | ПКМ — Меню (Оверлей/Основа)</span>
               </div>
 
-              <!-- Square preview profiles grid -->
+              <!-- Wide rectangular preview profiles grid (not square) -->
               <div class="kpm-profiles-grid" id="wallpapers-profiles-container">
                 <!-- Injected profile cards -->
               </div>
@@ -217,49 +222,100 @@
                   <span>Обновить список</span>
                 </button>
                 <button class="kpm-btn-secondary" id="btn-reset-wallpaper">
-                  <span>Сбросить обои</span>
+                  <span>Сбросить все слои</span>
                 </button>
               </div>
+            </div>
 
-              <!-- Scaling, Opacity, Brightness & Blur Controls -->
-              <div class="kpm-slider-row" style="margin-top: 18px; align-items: center; justify-content: space-between; display: flex;">
-                <div class="kpm-slider-meta" style="margin-bottom: 0;">
-                  <span>Масштабирование обоев</span>
-                </div>
-                <select id="select-wallpaper-fit" style="background: var(--bg-card); border: 1px solid rgba(255, 255, 255, 0.12); color: #fff; border-radius: 8px; padding: 6px 10px; font-size: 12px; outline: none; cursor: pointer;">
-                  <option value="cover">Заполнение (Cover, с сохранением пропорций)</option>
-                  <option value="fill">Растянуть на весь размер окна (Fill)</option>
-                  <option value="contain">Вписать целиком (Contain)</option>
-                </select>
+            <!-- Dual-Layer Wallpaper Management (Layer 1: Base & Layer 2: Overlay/Frame) -->
+            <div class="kpm-section-card">
+              <div class="kpm-section-header">
+                <span>Двухуровневый фон (Основа + Оверлей / Рамка)</span>
+                <span class="kpm-badge" id="badge-overlay-status" style="background: rgba(217, 70, 239, 0.18); color: #d946ef;">Оверлей активен</span>
               </div>
 
-              <div class="kpm-slider-row">
-                <div class="kpm-slider-meta">
-                  <span>Яркость обоев</span>
-                  <span class="kpm-slider-val" id="val-bg-brightness">100%</span>
+              <!-- Dual Layers Status Chips -->
+              <div class="kpm-layers-info-bar">
+                <div class="kpm-layer-chip">
+                  <span class="kpm-layer-dot base"></span>
+                  <span class="kpm-layer-chip-title">Слой 1 (Основной фон):</span>
+                  <b id="val-base-wp-name">anime_companion.jpg</b>
                 </div>
-                <input type="range" id="slider-bg-brightness" min="20" max="180" value="100">
+                <div class="kpm-layer-chip">
+                  <span class="kpm-layer-dot overlay"></span>
+                  <span class="kpm-layer-chip-title">Слой 2 (Оверлей / Рамка):</span>
+                  <b id="val-overlay-wp-name">gothic_frame_overlay.jpg</b>
+                  <button class="kpm-layer-remove-btn" id="btn-clear-overlay" title="Снять оверлей">×</button>
+                </div>
               </div>
 
-              <div class="kpm-slider-row">
-                <div class="kpm-slider-meta">
-                  <span>Прозрачность обоев</span>
-                  <span class="kpm-slider-val" id="val-bg-opacity">25%</span>
+              <!-- Layer 1 (Base) Controls -->
+              <div class="kpm-layer-settings-box">
+                <div class="kpm-layer-settings-title">Параметры основного фона (Слой 1)</div>
+                <div class="kpm-slider-row" style="margin-top: 10px; align-items: center; justify-content: space-between; display: flex;">
+                  <div class="kpm-slider-meta" style="margin-bottom: 0;">
+                    <span>Масштабирование основы</span>
+                  </div>
+                  <select id="select-wallpaper-fit" class="kpm-select-cyber">
+                    <option value="cover">Заполнение (Cover, с сохранением пропорций)</option>
+                    <option value="fill">Растянуть на весь размер окна (Fill)</option>
+                    <option value="contain">Вписать целиком (Contain)</option>
+                  </select>
                 </div>
-                <input type="range" id="slider-bg-opacity" min="0" max="85" value="25">
+
+                <div class="kpm-slider-row">
+                  <div class="kpm-slider-meta">
+                    <span>Яркость основы</span>
+                    <span class="kpm-slider-val" id="val-bg-brightness">100%</span>
+                  </div>
+                  <input type="range" id="slider-bg-brightness" min="20" max="180" value="100">
+                </div>
+
+                <div class="kpm-slider-row">
+                  <div class="kpm-slider-meta">
+                    <span>Прозрачность основы</span>
+                    <span class="kpm-slider-val" id="val-bg-opacity">25%</span>
+                  </div>
+                  <input type="range" id="slider-bg-opacity" min="0" max="85" value="25">
+                </div>
+
+                <div class="kpm-slider-row">
+                  <div class="kpm-slider-meta">
+                    <span>Размытие основы (Backdrop Blur)</span>
+                    <span class="kpm-slider-val" id="val-bg-blur">10px</span>
+                  </div>
+                  <input type="range" id="slider-bg-blur" min="0" max="30" value="10">
+                </div>
               </div>
 
-              <div class="kpm-slider-row">
-                <div class="kpm-slider-meta">
-                  <span>Размытие фона (Backdrop Blur)</span>
-                  <span class="kpm-slider-val" id="val-bg-blur">10px</span>
+              <!-- Layer 2 (Overlay / Frame) Controls -->
+              <div class="kpm-layer-settings-box" style="margin-top: 16px; border-color: rgba(217, 70, 239, 0.28);">
+                <div class="kpm-layer-settings-title" style="color: #e879f9;">Параметры оверлея / рамки (Слой 2)</div>
+                <div class="kpm-slider-row" style="margin-top: 10px; align-items: center; justify-content: space-between; display: flex;">
+                  <div class="kpm-slider-meta" style="margin-bottom: 0;">
+                    <span>Режим смешивания (Blend Mode)</span>
+                  </div>
+                  <select id="select-bg-overlay-blend" class="kpm-select-cyber">
+                    <option value="screen">Screen (Осветление: черное исчезает, цепи/звезды светятся!)</option>
+                    <option value="normal">Normal (Обычное наложение с прозрачностью)</option>
+                    <option value="lighten">Lighten (Замена светлым)</option>
+                    <option value="overlay">Overlay (Контрастный кибер-микс)</option>
+                  </select>
                 </div>
-                <input type="range" id="slider-bg-blur" min="0" max="30" value="10">
+
+                <div class="kpm-slider-row">
+                  <div class="kpm-slider-meta">
+                    <span>Прозрачность оверлея</span>
+                    <span class="kpm-slider-val" id="val-bg-overlay-opacity">85%</span>
+                  </div>
+                  <input type="range" id="slider-bg-overlay-opacity" min="0" max="100" value="85">
+                </div>
               </div>
 
-              <div class="kpm-slider-row">
+              <!-- General Window Glass Transparency -->
+              <div class="kpm-slider-row" style="margin-top: 18px;">
                 <div class="kpm-slider-meta">
-                  <span>Прозрачность левой таблицы (бокового меню)</span>
+                  <span>Прозрачность левого бокового меню</span>
                   <span class="kpm-slider-val" id="val-sidebar-opacity-wallpapers">80%</span>
                 </div>
                 <input type="range" id="slider-sidebar-opacity-wallpapers" min="10" max="100" value="80">
@@ -279,6 +335,82 @@
                   <span class="kpm-slider-val" id="val-card-opacity-wallpapers">70%</span>
                 </div>
                 <input type="range" id="slider-card-opacity-wallpapers" min="10" max="100" value="70">
+              </div>
+            </div>
+
+            <!-- Custom Menu Plates Section (Кастомизация табличек меню) -->
+            <div class="kpm-section-card">
+              <div class="kpm-section-header">
+                <span>Кастомизация табличек меню (Слева)</span>
+                <span class="kpm-badge" style="background: rgba(var(--accent-rgb, 0, 229, 255), 0.16); color: var(--accent-light);">Стиль & Цвет</span>
+              </div>
+              <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5;">
+                Настройте индивидуальный оттенок, яркость контуров и визуальные эффекты кибер-табличек навигации.
+              </div>
+
+              <!-- Plate Color Mode Toggle -->
+              <div class="kpm-slider-row" style="margin-top: 4px; align-items: center; justify-content: space-between; display: flex;">
+                <div class="kpm-slider-meta" style="margin-bottom: 0;">
+                  <span>Цветовой режим табличек</span>
+                </div>
+                <div class="kpm-filter-group" id="plate-color-mode-bar">
+                  <button class="kpm-filter-pill active" id="btn-plate-mode-accent" data-mode="accent">Следовать за акцентом</button>
+                  <button class="kpm-filter-pill" id="btn-plate-mode-custom" data-mode="custom">Свой цвет табличек</button>
+                </div>
+              </div>
+
+              <!-- Plate Custom Color Picker Row -->
+              <div id="plate-custom-color-wrap" style="display: none; margin-top: 14px; padding: 12px; background: rgba(0, 0, 0, 0.25); border-radius: 9px; border: 1px solid rgba(255, 255, 255, 0.08);">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="kpm-picker-swatch-chip" id="plate-swatch-chip" style="width: 32px; height: 32px;"></div>
+                    <div class="kpm-picker-hex-wrap" style="padding: 3px 8px;">
+                      <span class="kpm-picker-hash">#</span>
+                      <input type="text" class="kpm-picker-hex-input" id="plate-hex-input" value="00E5FF" maxlength="6" style="font-size: 13px; width: 64px;">
+                    </div>
+                  </div>
+                  <div class="kpm-picker-dots-row">
+                    <div class="kpm-color-dot-preset plate-dot" data-hex="#00e5ff" style="--dot-color: #00e5ff;" title="Кибер-циан"></div>
+                    <div class="kpm-color-dot-preset plate-dot" data-hex="#00d68f" style="--dot-color: #00d68f;" title="Изумруд"></div>
+                    <div class="kpm-color-dot-preset plate-dot" data-hex="#ffe600" style="--dot-color: #ffe600;" title="Cyberpunk Неон"></div>
+                    <div class="kpm-color-dot-preset plate-dot" data-hex="#ff0055" style="--dot-color: #ff0055;" title="Неоновый Рубин"></div>
+                    <div class="kpm-color-dot-preset plate-dot" data-hex="#d946ef" style="--dot-color: #d946ef;" title="Маджента"></div>
+                    <div class="kpm-color-dot-preset plate-dot" data-hex="#ffffff" style="--dot-color: #ffffff;" title="Белый титан"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Plate Base Contour Opacity Slider -->
+              <div class="kpm-slider-row" style="margin-top: 14px;">
+                <div class="kpm-slider-meta">
+                  <span>Видимость контура неактивных табличек</span>
+                  <span class="kpm-slider-val" id="val-plate-opacity">45%</span>
+                </div>
+                <input type="range" id="slider-plate-opacity" min="15" max="100" value="45">
+              </div>
+
+              <!-- Cyber Pulse Toggle (Функция кастомизации от себя) -->
+              <div class="kpm-slider-row" style="margin-top: 14px; align-items: center; justify-content: space-between; display: flex;">
+                <div class="kpm-slider-meta" style="margin-bottom: 0;">
+                  <span>Неоновое дыхание активной таблички (Cyber Pulse)</span>
+                  <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px;">Плавная живая кибер-пульсация свечения рамки</div>
+                </div>
+                <label class="kpm-switch-wrap">
+                  <input type="checkbox" id="check-plate-pulse" checked>
+                  <span class="kpm-switch-slider"></span>
+                </label>
+              </div>
+
+              <!-- Plate Style Select -->
+              <div class="kpm-slider-row" style="margin-top: 14px; align-items: center; justify-content: space-between; display: flex;">
+                <div class="kpm-slider-meta" style="margin-bottom: 0;">
+                  <span>Стиль подсветки табличек</span>
+                </div>
+                <select id="select-plate-style" class="kpm-select-cyber">
+                  <option value="titanium" selected>Титановый киберпанк (Матовое стекло + Неон)</option>
+                  <option value="neon">Неоновый глянец (Яркий неоновый ореол)</option>
+                  <option value="minimal">Минималистичный контур (Тонкий четкий контур)</option>
+                </select>
               </div>
             </div>
 
@@ -702,6 +834,27 @@
         <button type="submit" class="lock-submit-btn" id="btn-unlock">Войти</button>
       </form>
       <div id="lock-error-msg" class="lock-error-msg" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- Custom Cyber Wallpaper Context Menu (ПКМ по карточке обоев) -->
+  <div class="kpm-wp-context-menu" id="wp-context-menu" style="display: none;">
+    <div class="kpm-wp-menu-item" data-action="set-base">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <span>Сделать основным фоном (Слой 1)</span>
+    </div>
+    <div class="kpm-wp-menu-item" data-action="set-overlay">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="15" height="15" rx="2"/><rect x="7" y="7" width="15" height="15" rx="2" stroke-dasharray="3 2"/></svg>
+      <span>Наложить как оверлей / рамку (Слой 2)</span>
+    </div>
+    <div class="kpm-wp-menu-item" data-action="clear-overlay" id="wp-menu-item-clear-overlay" style="display: none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      <span>Снять с оверлея</span>
+    </div>
+    <div class="kpm-wp-menu-separator"></div>
+    <div class="kpm-wp-menu-item danger" data-action="delete" id="wp-menu-item-delete">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      <span>Удалить файл обоев</span>
     </div>
   </div>
 

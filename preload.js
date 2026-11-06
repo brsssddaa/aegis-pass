@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('aegis', {
   openWallpapersFolder: () => ipcRenderer.invoke('wallpapers-open-folder'),
   listWallpapers: () => ipcRenderer.invoke('wallpapers-list'),
   selectAndAddWallpaper: () => ipcRenderer.invoke('wallpapers-select-file'),
+  deleteWallpaper: (fileName) => ipcRenderer.invoke('wallpapers-delete-file', fileName),
 
   selectGameExe: () => ipcRenderer.invoke('games-select-exe'),
   getStorageInfo: () => ipcRenderer.invoke('storage-info'),

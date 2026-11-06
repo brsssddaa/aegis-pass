@@ -95,6 +95,12 @@ function initDefaultWallpapers() {
     if (fs.existsSync(sourceAnime) && !fs.existsSync(targetAnime)) {
       fs.copyFileSync(sourceAnime, targetAnime);
     }
+
+    const sourceGothic = path.join(__dirname, 'src', 'assets', 'wallpaper_gothic_frame.jpg');
+    const targetGothic = path.join(wDir, 'gothic_frame_overlay.jpg');
+    if (fs.existsSync(sourceGothic) && !fs.existsSync(targetGothic)) {
+      fs.copyFileSync(sourceGothic, targetGothic);
+    }
   } catch (e) {
     console.error('Failed to init wallpapers:', e);
   }
@@ -223,6 +229,20 @@ ipcMain.handle('wallpapers-select-file', async () => {
   } catch (e) {
     return { ok: false, error: e.message };
   }
+});
+
+ipcMain.handle('wallpapers-delete-file', async (event, fileName) => {
+  try {
+    const dir = getWallpapersDir();
+    const filePath = path.join(dir, fileName);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      return { ok: true };
+    }
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+  return { ok: false };
 });
 
 // Select Game executable (.exe / .lnk / .url) on PC

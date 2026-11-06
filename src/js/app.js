@@ -179,6 +179,12 @@
     }
     themeEngine.sounds.enabled = settings.uiSounds !== false;
 
+    // Apply custom plates configuration
+    applyPlateCustomization();
+
+    // Apply dual-layer wallpaper background
+    applyWallpaperBackground();
+
     // Update color pickers if initialized
     const currentHex = themeEngine.currentAccentColor || '#00e5ff';
     if (colorPickerWallpapers) colorPickerWallpapers.setColorFromHex(currentHex, false);
@@ -276,27 +282,137 @@
     const checkSounds = document.getElementById('check-ui-sounds');
     if (checkSounds) checkSounds.checked = settings.uiSounds !== false;
 
-    applyWallpaperBackground(settings.activeWallpaperId);
+    applyWallpaperBackground();
+    applyPlateCustomization();
   }
 
-  function applyWallpaperBackground(wallpaperId) {
+  // Dual-Layer Wallpaper Background (Base Wallpaper + Overlay / Frame)
+  function applyWallpaperBackground() {
     const bgImg = document.getElementById('kpm-bg-img');
-    if (!bgImg) return;
+    const overlayImg = document.getElementById('kpm-bg-overlay-img');
+    const root = document.documentElement;
 
-    if (!wallpaperId || wallpaperId === 'none') {
-      bgImg.classList.remove('active');
-      bgImg.src = '';
-      return;
+    // 1. Layer 1: Base Wallpaper
+    const baseId = settings.activeWallpaperId;
+    if (bgImg) {
+      if (!baseId || baseId === 'none') {
+        bgImg.classList.remove('active');
+        bgImg.src = '';
+      } else {
+        const found = cachedWallpapers.find(w => w.fileName === baseId || w.id === baseId);
+        if (found) {
+          bgImg.src = found.fileUrl;
+        } else if (baseId === 'anime_companion.jpg' || baseId === 'wallpaper_anime.jpg') {
+          bgImg.src = 'assets/wallpaper_anime.jpg';
+        } else if (baseId === 'gothic_frame_overlay.jpg' || baseId === 'wallpaper_gothic_frame.jpg') {
+          bgImg.src = 'assets/wallpaper_gothic_frame.jpg';
+        } else {
+          bgImg.src = 'assets/wallpaper_anime.jpg';
+        }
+        bgImg.classList.add('active');
+      }
     }
 
-    // Check if it exists in discovered list
-    const found = cachedWallpapers.find(w => w.fileName === wallpaperId || w.id === wallpaperId);
-    if (found) {
-      bgImg.src = found.fileUrl;
-      bgImg.classList.add('active');
+    // 2. Layer 2: Overlay / Frame Wallpaper (e.g. chains, stars, vignette frame)
+    const overlayId = settings.overlayWallpaperId;
+    if (overlayImg) {
+      if (!overlayId || overlayId === 'none' || overlayId === '') {
+        overlayImg.classList.remove('active');
+        overlayImg.src = '';
+      } else {
+        const foundO = cachedWallpapers.find(w => w.fileName === overlayId || w.id === overlayId);
+        if (foundO) {
+          overlayImg.src = foundO.fileUrl;
+        } else if (overlayId === 'gothic_frame_overlay.jpg' || overlayId === 'wallpaper_gothic_frame.jpg') {
+          overlayImg.src = 'assets/wallpaper_gothic_frame.jpg';
+        } else if (overlayId === 'anime_companion.jpg' || overlayId === 'wallpaper_anime.jpg') {
+          overlayImg.src = 'assets/wallpaper_anime.jpg';
+        } else {
+          overlayImg.src = '';
+        }
+        overlayImg.classList.add('active');
+      }
+    }
+
+    const overlayOp = typeof settings.overlayOpacity === 'number' ? settings.overlayOpacity : 85;
+    const overlayBlend = settings.overlayBlend || 'screen';
+    root.style.setProperty('--bg-overlay-opacity', (overlayOp / 100).toString());
+    root.style.setProperty('--bg-overlay-blend', overlayBlend);
+
+    // Update Status Chips in Wallpapers Section
+    const baseChip = document.getElementById('val-base-wp-name');
+    const overlayChip = document.getElementById('val-overlay-wp-name');
+    const overlayBadge = document.getElementById('badge-overlay-status');
+    const clearBtn = document.getElementById('btn-clear-overlay');
+
+    if (baseChip) baseChip.textContent = baseId && baseId !== 'none' ? baseId : 'Касперский классик (без основы)';
+    if (overlayChip) {
+      if (overlayId && overlayId !== 'none') {
+        overlayChip.textContent = overlayId;
+        if (overlayBadge) {
+          overlayBadge.style.display = 'inline-block';
+          overlayBadge.textContent = `Оверлей: ${overlayBlend.toUpperCase()} (${overlayOp}%)`;
+        }
+        if (clearBtn) clearBtn.style.display = 'inline-flex';
+      } else {
+        overlayChip.textContent = 'Не назначен (только основа)';
+        if (overlayBadge) overlayBadge.style.display = 'none';
+        if (clearBtn) clearBtn.style.display = 'none';
+      }
+    }
+  }
+
+  // Plate Customization Engine (Цвет, прозрачность, неоновое дыхание, стиль)
+  function applyPlateCustomization() {
+    const root = document.documentElement;
+    const mode = settings.plateColorMode || 'accent';
+    const customHex = settings.plateCustomColor || '#00e5ff';
+    const baseOpacity = typeof settings.plateBaseOpacity === 'number' ? settings.plateBaseOpacity : 45;
+    const pulse = settings.platePulse !== false;
+    const style = settings.plateStyle || 'titanium';
+
+    if (mode === 'custom') {
+      const rgb = (typeof hexToRgb === 'function') ? hexToRgb(customHex) : { r: 0, g: 229, b: 255 };
+      root.style.setProperty('--plate-primary', customHex);
+      root.style.setProperty('--plate-glow', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.45)`);
+      root.style.setProperty('--plate-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
     } else {
-      bgImg.src = 'assets/wallpaper_anime.jpg';
-      bgImg.classList.add('active');
+      root.style.removeProperty('--plate-primary');
+      root.style.removeProperty('--plate-glow');
+      root.style.removeProperty('--plate-rgb');
+    }
+
+    root.style.setProperty('--plate-base-opacity', (baseOpacity / 100).toString());
+
+    // Toggle pulse on all menu items
+    document.querySelectorAll('.kpm-menu-item').forEach(item => {
+      item.classList.toggle('cyber-pulse', pulse);
+    });
+
+    // Body class for plate style
+    document.body.classList.remove('plate-style-titanium', 'plate-style-neon', 'plate-style-minimal');
+    document.body.classList.add(`plate-style-${style}`);
+
+    // Update UI controls if present
+    const btnAccent = document.getElementById('btn-plate-mode-accent');
+    const btnCustom = document.getElementById('btn-plate-mode-custom');
+    const customWrap = document.getElementById('plate-custom-color-wrap');
+    const swatchChip = document.getElementById('plate-swatch-chip');
+    const hexInput = document.getElementById('plate-hex-input');
+
+    if (btnAccent && btnCustom) {
+      btnAccent.classList.toggle('active', mode === 'accent');
+      btnCustom.classList.toggle('active', mode === 'custom');
+    }
+    if (customWrap) {
+      customWrap.style.display = mode === 'custom' ? 'block' : 'none';
+    }
+    if (swatchChip) {
+      swatchChip.style.backgroundColor = customHex;
+      swatchChip.style.boxShadow = `0 0 12px ${customHex}88`;
+    }
+    if (hexInput && document.activeElement !== hexInput) {
+      hexInput.value = customHex.replace('#', '').toUpperCase();
     }
   }
 
@@ -846,15 +962,55 @@
       showToast('Список фонов обновлен');
     });
 
-    // Reset Wallpaper (Pure Dark)
+    // Reset Wallpapers (Clear both base & overlay)
     document.getElementById('btn-reset-wallpaper').addEventListener('click', () => {
       themeEngine.sounds.playClick();
       settings.activeWallpaperId = 'none';
-      applyWallpaperBackground('none');
+      settings.overlayWallpaperId = '';
+      applyWallpaperBackground();
       saveCurrentSettings();
       renderWallpapersGallery();
-      showToast('Фон сброшен');
+      showToast('Все слои фона сброшены');
     });
+
+    // Clear Overlay button
+    const btnClearOv = document.getElementById('btn-clear-overlay');
+    if (btnClearOv) {
+      btnClearOv.addEventListener('click', (e) => {
+        e.stopPropagation();
+        themeEngine.sounds.playClick();
+        settings.overlayWallpaperId = '';
+        applyWallpaperBackground();
+        saveCurrentSettings();
+        renderWallpapersGallery();
+        showToast('Оверлей снят');
+      });
+    }
+
+    // Overlay Opacity Slider
+    const sliderOverlayOp = document.getElementById('slider-bg-overlay-opacity');
+    if (sliderOverlayOp) {
+      sliderOverlayOp.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        settings.overlayOpacity = val;
+        const vEl = document.getElementById('val-bg-overlay-opacity');
+        if (vEl) vEl.textContent = val + '%';
+        document.documentElement.style.setProperty('--bg-overlay-opacity', (val / 100).toString());
+        saveCurrentSettings();
+      });
+    }
+
+    // Overlay Blend Mode Select
+    const selOverlayBlend = document.getElementById('select-bg-overlay-blend');
+    if (selOverlayBlend) {
+      selOverlayBlend.addEventListener('change', (e) => {
+        const val = e.target.value;
+        settings.overlayBlend = val;
+        document.documentElement.style.setProperty('--bg-overlay-blend', val);
+        applyWallpaperBackground();
+        saveCurrentSettings();
+      });
+    }
 
     // Sliders in Wallpapers Pane
     const sliderOp = document.getElementById('slider-bg-opacity');
@@ -966,6 +1122,84 @@
       });
     }
 
+    // ==============================================================================
+    // CUSTOM MENU PLATES CUSTOMIZATION ENGINE
+    // ==============================================================================
+    const btnPlateAccent = document.getElementById('btn-plate-mode-accent');
+    const btnPlateCustom = document.getElementById('btn-plate-mode-custom');
+    if (btnPlateAccent && btnPlateCustom) {
+      btnPlateAccent.addEventListener('click', () => {
+        themeEngine.sounds.playClick();
+        settings.plateColorMode = 'accent';
+        applyPlateCustomization();
+        saveCurrentSettings();
+      });
+      btnPlateCustom.addEventListener('click', () => {
+        themeEngine.sounds.playClick();
+        settings.plateColorMode = 'custom';
+        applyPlateCustomization();
+        saveCurrentSettings();
+      });
+    }
+
+    const sliderPlateOp = document.getElementById('slider-plate-opacity');
+    if (sliderPlateOp) {
+      sliderPlateOp.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        settings.plateBaseOpacity = val;
+        const vEl = document.getElementById('val-plate-opacity');
+        if (vEl) vEl.textContent = val + '%';
+        document.documentElement.style.setProperty('--plate-base-opacity', (val / 100).toString());
+        saveCurrentSettings();
+      });
+    }
+
+    const chkPulse = document.getElementById('check-plate-pulse');
+    if (chkPulse) {
+      chkPulse.addEventListener('change', (e) => {
+        themeEngine.sounds.playClick();
+        settings.platePulse = e.target.checked;
+        applyPlateCustomization();
+        saveCurrentSettings();
+      });
+    }
+
+    const selPlateStyle = document.getElementById('select-plate-style');
+    if (selPlateStyle) {
+      selPlateStyle.addEventListener('change', (e) => {
+        settings.plateStyle = e.target.value;
+        applyPlateCustomization();
+        saveCurrentSettings();
+      });
+    }
+
+    // Quick Dots for Plate Color
+    document.querySelectorAll('.kpm-color-dot-preset.plate-dot').forEach(dot => {
+      dot.addEventListener('click', () => {
+        themeEngine.sounds.playClick();
+        const hex = dot.getAttribute('data-hex');
+        if (hex) {
+          settings.plateColorMode = 'custom';
+          settings.plateCustomColor = hex;
+          applyPlateCustomization();
+          saveCurrentSettings();
+        }
+      });
+    });
+
+    const plateHexInput = document.getElementById('plate-hex-input');
+    if (plateHexInput) {
+      plateHexInput.addEventListener('input', (e) => {
+        const val = e.target.value.replace(/[^0-9a-fA-F]/g, '');
+        if (val.length === 6) {
+          settings.plateColorMode = 'custom';
+          settings.plateCustomColor = '#' + val;
+          applyPlateCustomization();
+          saveCurrentSettings();
+        }
+      });
+    }
+
     // Cyber Color Pickers in Wallpapers Pane and Settings
     function handleColorChange(hex, rgb, brightness) {
       themeEngine.applyCustomColor(hex, brightness);
@@ -1009,6 +1243,104 @@
       const initHex = settings.customAccentColor || (settings.theme && settings.theme.startsWith('#') ? settings.theme : '#00e5ff');
       colorPickerSettings.setColorFromHex(initHex, false);
     }
+
+    setupWallpaperContextMenu();
+  }
+
+  // ==============================================================================
+  // WALLPAPER CONTEXT MENU & DUAL-LAYER GALLERY
+  // ==============================================================================
+  let activeContextWpId = null;
+
+  function setupWallpaperContextMenu() {
+    const menu = document.getElementById('wp-context-menu');
+    if (!menu) return;
+
+    window.addEventListener('click', (e) => {
+      if (!menu.contains(e.target)) {
+        menu.style.display = 'none';
+      }
+    });
+
+    window.addEventListener('scroll', () => {
+      menu.style.display = 'none';
+    }, { passive: true });
+
+    menu.querySelectorAll('.kpm-wp-menu-item').forEach(item => {
+      item.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        menu.style.display = 'none';
+        const action = item.getAttribute('data-action');
+        if (!activeContextWpId) return;
+
+        themeEngine.sounds.playClick();
+
+        if (action === 'set-base') {
+          settings.activeWallpaperId = activeContextWpId;
+          applyWallpaperBackground();
+          saveCurrentSettings();
+          renderWallpapersGallery();
+          showToast('Установлен как основной фон (Слой 1)');
+        } else if (action === 'set-overlay') {
+          settings.overlayWallpaperId = activeContextWpId;
+          applyWallpaperBackground();
+          saveCurrentSettings();
+          renderWallpapersGallery();
+          showToast('Наложен как оверлей / рамка (Слой 2)');
+        } else if (action === 'clear-overlay') {
+          settings.overlayWallpaperId = '';
+          applyWallpaperBackground();
+          saveCurrentSettings();
+          renderWallpapersGallery();
+          showToast('Оверлей снят');
+        } else if (action === 'delete') {
+          if (activeContextWpId === 'anime_companion.jpg' || activeContextWpId === 'gothic_frame_overlay.jpg') {
+            showToast('Системные обои нельзя удалить');
+            return;
+          }
+          if (window.aegis && window.aegis.deleteWallpaper) {
+            const res = await window.aegis.deleteWallpaper(activeContextWpId);
+            if (res && res.ok) {
+              if (settings.activeWallpaperId === activeContextWpId) settings.activeWallpaperId = 'none';
+              if (settings.overlayWallpaperId === activeContextWpId) settings.overlayWallpaperId = '';
+              applyWallpaperBackground();
+              saveCurrentSettings();
+              renderWallpapersGallery();
+              showToast('Файл обоев удален');
+            } else {
+              showToast('Не удалось удалить файл');
+            }
+          }
+        }
+      });
+    });
+  }
+
+  function showWallpaperContextMenu(e, wpId) {
+    e.preventDefault();
+    e.stopPropagation();
+    activeContextWpId = wpId;
+    const menu = document.getElementById('wp-context-menu');
+    if (!menu) return;
+
+    const clearOverlayItem = document.getElementById('wp-menu-item-clear-overlay');
+    if (clearOverlayItem) {
+      clearOverlayItem.style.display = (settings.overlayWallpaperId === wpId) ? 'flex' : 'none';
+    }
+
+    const deleteItem = document.getElementById('wp-menu-item-delete');
+    if (deleteItem) {
+      deleteItem.style.display = (wpId === 'none' || wpId === 'anime_companion.jpg' || wpId === 'gothic_frame_overlay.jpg') ? 'none' : 'flex';
+    }
+
+    menu.style.display = 'flex';
+    const menuW = 240;
+    const menuH = 160;
+    const x = Math.min(window.innerWidth - menuW - 10, Math.max(10, e.clientX));
+    const y = Math.min(window.innerHeight - menuH - 10, Math.max(10, e.clientY));
+
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
   }
 
   async function renderWallpapersGallery() {
@@ -1019,28 +1351,39 @@
       cachedWallpapers = await window.aegis.listWallpapers();
     }
 
+    const baseId = settings.activeWallpaperId;
+    const overlayId = settings.overlayWallpaperId;
+
     // Default "None" card
-    const isNoneActive = (!settings.activeWallpaperId || settings.activeWallpaperId === 'none');
+    const isNoneBase = (!baseId || baseId === 'none');
     let html = `
-      <div class="kpm-profile-card ${isNoneActive ? 'active' : ''}" data-id="none">
+      <div class="kpm-profile-card ${isNoneBase ? 'active-base' : ''}" data-id="none">
         <div class="kpm-profile-default-fill">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
             <line x1="3" y1="3" x2="21" y2="21"/>
           </svg>
         </div>
-        ${isNoneActive ? '<div class="kpm-profile-badge">АКТИВЕН</div>' : ''}
-        <div class="kpm-profile-footer">Касперский классик</div>
+        <div class="kpm-profile-badges-wrap">
+          ${isNoneBase ? '<span class="kpm-profile-badge base">ОСНОВНОЙ</span>' : '<span></span>'}
+        </div>
+        <div class="kpm-profile-footer">Касперский классик (без основы)</div>
       </div>
     `;
 
-    // Add each discovered wallpaper from folder
+    // Add each discovered wallpaper from folder (widescreen horizontal cards)
     cachedWallpapers.forEach(item => {
-      const isActive = (settings.activeWallpaperId === item.id || settings.activeWallpaperId === item.fileName);
+      const isBase = (baseId === item.id || baseId === item.fileName);
+      const isOverlay = (overlayId === item.id || overlayId === item.fileName);
+      const activeClasses = (isBase ? 'active-base ' : '') + (isOverlay ? 'active-overlay' : '');
+
       html += `
-        <div class="kpm-profile-card ${isActive ? 'active' : ''}" data-id="${item.fileName}">
+        <div class="kpm-profile-card ${activeClasses}" data-id="${item.fileName}">
           <img src="${item.fileUrl}" class="kpm-profile-thumb" alt="${item.name}">
-          ${isActive ? '<div class="kpm-profile-badge">АКТИВЕН</div>' : ''}
+          <div class="kpm-profile-badges-wrap">
+            ${isBase ? '<span class="kpm-profile-badge base">ОСНОВНОЙ</span>' : '<span></span>'}
+            ${isOverlay ? '<span class="kpm-profile-badge overlay">ОВЕРЛЕЙ</span>' : ''}
+          </div>
           <div class="kpm-profile-footer" title="${item.name}">${item.name}</div>
         </div>
       `;
@@ -1048,18 +1391,26 @@
 
     container.innerHTML = html;
 
-    // Attach card click handlers
+    // Left Click: Set as Base Wallpaper
     container.querySelectorAll('.kpm-profile-card').forEach(card => {
       card.addEventListener('click', () => {
         themeEngine.sounds.playClick();
         const id = card.getAttribute('data-id');
         settings.activeWallpaperId = id;
-        applyWallpaperBackground(id);
+        applyWallpaperBackground();
         saveCurrentSettings();
         renderWallpapersGallery();
-        showToast('Профиль фона активирован');
+        showToast('Установлен как основной фон');
+      });
+
+      // Right Click (ПКМ): Show Context Menu (Выбрать: Основной или Оверлей/Рамка)
+      card.addEventListener('contextmenu', (e) => {
+        const id = card.getAttribute('data-id');
+        showWallpaperContextMenu(e, id);
       });
     });
+
+    applyWallpaperBackground();
   }
 
   // ==============================================================================
