@@ -151,6 +151,11 @@
             <input type="text" id="kpm-search-input" placeholder="Поиск (Ctrl+F)">
           </div>
 
+          <!-- Lock & Exit Button -->
+          <button class="kpm-icon-btn" id="btn-topbar-lock" title="Заблокировать сейф и выйти">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </button>
+
           <!-- Window Controls -->
           <div class="kpm-window-controls">
             <button class="kpm-win-btn" id="btn-win-min" title="Свернуть">
@@ -681,22 +686,136 @@
     </div>
   </div>
 
-  <!-- Master Password Lock Screen Overlay (Simple, minimalist, no vibe-code) -->
-  <div class="lock-screen-overlay unlocked" id="lock-screen">
-    <div class="lock-card">
+  <!-- Master Password & Zero-Knowledge Google Auth Screen -->
+  <div class="lock-screen-overlay" id="lock-screen">
+    <div class="lock-card" id="lock-card-main">
+      <div class="lock-card-glow-bar"></div>
+
       <div class="lock-logo-box">
         <img src="assets/logo_custom.png" alt="Aegis Pass">
       </div>
 
       <div class="lock-title-box">
         <div class="lock-title">Aegis Pass</div>
-        <div class="lock-subtitle">Мастер-пароль</div>
+        <div class="lock-subtitle" id="lock-stage-subtitle">Безопасный Zero-Knowledge вход</div>
       </div>
 
-      <form id="lock-form" class="lock-form">
-        <input type="password" id="master-password-input" class="lock-input" placeholder="Введите мастер-пароль или Enter..." autofocus>
-        <button type="submit" class="lock-submit-btn" id="btn-unlock">Войти</button>
-      </form>
+      <!-- STAGE 1: Google Sign-In & Email OTP Request -->
+      <div id="lock-stage-google" class="lock-stage-block" style="display: none;">
+        <button type="button" class="lock-google-btn" id="btn-lock-google-auth">
+          <svg viewBox="0 0 48 48" width="19" height="19">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          <span>Войти через Google</span>
+        </button>
+
+        <div class="lock-divider">
+          <span>или по email</span>
+        </div>
+
+        <form id="lock-email-form" class="lock-form">
+          <div class="lock-input-wrap">
+            <svg class="lock-input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            <input type="email" id="lock-email-input" class="lock-input" placeholder="Введите ваш email..." required>
+          </div>
+          <button type="submit" class="lock-submit-btn" id="btn-lock-send-otp">
+            <span>Получить код на почту</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </form>
+      </div>
+
+      <!-- STAGE 2: Email OTP 2FA Code Verification -->
+      <div id="lock-stage-otp" class="lock-stage-block" style="display: none;">
+        <div class="lock-otp-badge-card">
+          <div class="lock-otp-badge-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#00e5ff" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div class="lock-otp-badge-meta">
+            <span class="lock-otp-badge-label">Код отправлен на:</span>
+            <strong id="lock-otp-email-target" class="lock-otp-badge-target">user@gmail.com</strong>
+          </div>
+        </div>
+
+        <form id="lock-otp-form" class="lock-form">
+          <div class="lock-input-wrap">
+            <input type="text" id="lock-otp-input" class="lock-input lock-otp-field" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="000000" autocomplete="one-time-code" autofocus required>
+          </div>
+
+          <div class="lock-otp-timer-row">
+            <span id="lock-otp-timer">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 3px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Код действует: 5:00
+            </span>
+            <button type="button" class="lock-resend-btn" id="btn-lock-resend-otp">Отправить повторно</button>
+          </div>
+
+          <button type="submit" class="lock-submit-btn" id="btn-lock-verify-otp">
+            <span>Подтвердить код</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <button type="button" class="lock-back-btn" id="btn-lock-otp-back">← Назад к выбору почты</button>
+        </form>
+      </div>
+
+      <!-- STAGE 3: Master Password Decryption (Zero-Knowledge) -->
+      <div id="lock-stage-master" class="lock-stage-block">
+        <div class="lock-user-pill">
+          <img id="lock-user-avatar" src="" alt="Google Avatar" style="display: none;">
+          <div id="lock-user-avatar-fallback" class="lock-user-fallback">G</div>
+          <div class="lock-user-meta">
+            <div class="lock-user-email" id="lock-display-email">hddfi@gmail.com</div>
+            <div class="lock-user-badge">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Google ID подтвержден</span>
+            </div>
+          </div>
+        </div>
+
+        <form id="lock-form" class="lock-form">
+          <!-- Existing account: Enter master password -->
+          <div id="master-enter-group" style="width: 100%;">
+            <div class="lock-input-wrap">
+              <svg class="lock-input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="master-password-input" class="lock-input" placeholder="Введите мастер-пароль..." autofocus>
+              <button type="button" class="lock-pass-toggle" id="btn-toggle-master-pass" title="Показать / скрыть пароль">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- New account: Create master password -->
+          <div id="master-create-group" style="display: none; width: 100%; flex-direction: column; gap: 8px;">
+            <div class="lock-create-hint">
+              Придумайте надёжный мастер-пароль (от 6 символов). Он будет вашим ключом шифрования AES-256:
+            </div>
+            <div class="lock-input-wrap">
+              <svg class="lock-input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="master-password-new" class="lock-input" placeholder="Придумайте мастер-пароль...">
+            </div>
+            <div class="lock-input-wrap">
+              <svg class="lock-input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="master-password-confirm" class="lock-input" placeholder="Повторите мастер-пароль...">
+            </div>
+          </div>
+
+          <button type="submit" class="lock-submit-btn" id="btn-unlock">
+            <span>Разблокировать сейф</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </form>
+
+        <button type="button" class="lock-switch-btn" id="btn-lock-switch-account">
+          <span>Сменить Google аккаунт / Выйти</span>
+        </button>
+      </div>
+
       <div id="lock-error-msg" class="lock-error-msg" style="display: none;"></div>
     </div>
   </div>
@@ -728,6 +847,8 @@
     <span id="toast-text">Скопировано в буфер обмена</span>
   </div>
 
+  <!-- Google Identity Services SDK -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <!-- Scripts -->
   <script src="js/crypto-vault.js"></script>
   <script src="js/generator.js"></script>

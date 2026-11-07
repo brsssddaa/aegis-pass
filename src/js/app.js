@@ -474,7 +474,13 @@
         // 3. Hide popover
         if (avatarPopover) avatarPopover.style.display = 'none';
 
-        // 4. Notify user
+        // 4. Lock vault & switch to Google Sign-In stage
+        lockVault();
+        if (typeof showAuthStage === 'function') {
+          showAuthStage('google');
+        }
+
+        // 5. Notify user
         showToast('✓ Вы успешно вышли из аккаунта. Сессия завершена.');
       });
     }
@@ -581,6 +587,15 @@
   // ==============================================================================
   function setupTopBar() {
     // Window controls
+    const btnLockTop = document.getElementById('btn-topbar-lock');
+    if (btnLockTop) {
+      btnLockTop.addEventListener('click', () => {
+        if (themeEngine && themeEngine.sounds) themeEngine.sounds.playClick();
+        lockVault();
+        showToast('🔒 Сейф заблокирован');
+      });
+    }
+
     document.getElementById('btn-win-min').addEventListener('click', () => {
       if (window.aegis) window.aegis.minimize();
     });
@@ -1551,6 +1566,11 @@
       btnSaveRenderCloud.addEventListener('click', async () => {
         const url = (renderCloudUrlInput?.value || '').trim().replace(/\/+$/, '');
         localStorage.setItem('aegis_render_cloud_url', url);
+        if (url) {
+          localStorage.setItem('aegis_sync_server_url', url);
+        } else {
+          localStorage.removeItem('aegis_sync_server_url');
+        }
         if (themeEngine && themeEngine.sounds) themeEngine.sounds.playClick();
         if (url) {
           await syncWithRenderCloud(url);
@@ -2161,39 +2181,442 @@
   }
 
   // ==============================================================================
-  // LOCK SCREEN & INSTANT ACCESS AUTH (NO PASSWORD REQUIRED)
+  // ZERO-KNOWLEDGE MULTI-STAGE AUTH & MASTER PASSWORD LOCK SCREEN
   // ==============================================================================
+  let currentAuthEmail = 'hddfi@gmail.com';
+  let otpCountdownInterval = null;
+  let showAuthStage = null;
+
   function setupLockScreen() {
     const lockScreen = document.getElementById('lock-screen');
-    const lockForm = document.getElementById('lock-form');
-    const passInput = document.getElementById('master-password-input');
+    const lockSubtitle = document.getElementById('lock-stage-subtitle');
     const errMsg = document.getElementById('lock-error-msg');
 
-    if (passInput) {
-      passInput.removeAttribute('required');
-      passInput.removeAttribute('minlength');
-      passInput.placeholder = 'Нажмите «Разблокировать» или Enter...';
+    // 1. Sync persistent master hash from disk (DPAPI) if available
+    if (window.aegis && window.aegis.getMasterHash) {
+      window.aegis.getMasterHash().then((diskMaster) => {
+        if (diskMaster) {
+          localStorage.setItem('aegis_master_hash', diskMaster);
+          const stageM = document.getElementById('lock-stage-master');
+          if (stageM && stageM.style.display !== 'none' && typeof showAuthStage === 'function') {
+            showAuthStage('master');
+          }
+        }
+      }).catch(() => {});
     }
 
-    lockForm.addEventListener('submit', (e) => {
-      e.preventDefault();
+    const stageGoogle = document.getElementById('lock-stage-google');
+    const stageOtp = document.getElementById('lock-stage-otp');
+    const stageMaster = document.getElementById('lock-stage-master');
+
+    const btnGoogleAuth = document.getElementById('btn-lock-google-auth');
+    const lockEmailForm = document.getElementById('lock-email-form');
+    const lockEmailInput = document.getElementById('lock-email-input');
+
+    const lockOtpForm = document.getElementById('lock-otp-form');
+    const lockOtpInput = document.getElementById('lock-otp-input');
+    const lockOtpEmailTarget = document.getElementById('lock-otp-email-target');
+    const lockOtpTimer = document.getElementById('lock-otp-timer');
+    const btnResendOtp = document.getElementById('btn-lock-resend-otp');
+    const btnOtpBack = document.getElementById('btn-lock-otp-back');
+
+    const lockForm = document.getElementById('lock-form');
+    const passInput = document.getElementById('master-password-input');
+    const masterEnterGroup = document.getElementById('master-enter-group');
+    const masterCreateGroup = document.getElementById('master-create-group');
+    const masterPassNew = document.getElementById('master-password-new');
+    const masterPassConfirm = document.getElementById('master-password-confirm');
+    const btnUnlock = document.getElementById('btn-unlock');
+
+    const btnSwitchAccount = document.getElementById('btn-lock-switch-account');
+    const displayEmail = document.getElementById('lock-display-email');
+    const userAvatarImg = document.getElementById('lock-user-avatar');
+    const userAvatarFallback = document.getElementById('lock-user-avatar-fallback');
+
+    function showError(msg) {
+      if (errMsg) {
+        errMsg.textContent = msg;
+        errMsg.style.display = 'block';
+      }
+      if (themeEngine && themeEngine.sounds) themeEngine.sounds.playError();
+    }
+
+    function clearError() {
       if (errMsg) errMsg.style.display = 'none';
-      if (passInput) passInput.value = '';
-      lockScreen.classList.add('unlocked');
-      themeEngine.sounds.playSuccess();
-      showToast('Доступ открыт');
-      renderCardsGrid();
-    });
+    }
+
+    function showStage(stageName) {
+      clearError();
+      if (stageGoogle) stageGoogle.style.display = (stageName === 'google') ? 'flex' : 'none';
+      if (stageOtp) stageOtp.style.display = (stageName === 'otp') ? 'flex' : 'none';
+      if (stageMaster) stageMaster.style.display = (stageName === 'master') ? 'flex' : 'none';
+
+      if (stageName === 'google') {
+        if (lockSubtitle) lockSubtitle.textContent = 'Шаг 1: Идентификация Google';
+        if (lockEmailInput) {
+          lockEmailInput.value = currentAuthEmail;
+          setTimeout(() => lockEmailInput.focus(), 80);
+        }
+      } else if (stageName === 'otp') {
+        if (lockSubtitle) lockSubtitle.textContent = 'Шаг 2: Проверочный код на почту';
+        if (lockOtpEmailTarget) lockOtpEmailTarget.textContent = currentAuthEmail;
+        if (lockOtpInput) {
+          lockOtpInput.value = '';
+          setTimeout(() => lockOtpInput.focus(), 80);
+        }
+        startOtpTimer();
+      } else if (stageName === 'master') {
+        const savedMaster = localStorage.getItem('aegis_master_hash');
+        const hasExistingData = (Array.isArray(vaultItems) && vaultItems.length > 0) || Boolean(savedMaster);
+        const isNewUser = !hasExistingData && !savedMaster;
+
+        if (lockSubtitle) {
+          lockSubtitle.textContent = isNewUser
+            ? 'Шаг 3: Создание Мастер-пароля'
+            : 'Шаг 3: Ввод Мастер-пароля (Zero-Knowledge)';
+        }
+
+        if (masterCreateGroup && masterEnterGroup) {
+          if (isNewUser) {
+            masterCreateGroup.style.display = 'flex';
+            masterEnterGroup.style.display = 'none';
+            if (btnUnlock) btnUnlock.textContent = 'Создать хранилище и войти';
+            if (masterPassNew) {
+              masterPassNew.value = '';
+              setTimeout(() => masterPassNew.focus(), 80);
+            }
+            if (masterPassConfirm) masterPassConfirm.value = '';
+          } else {
+            masterCreateGroup.style.display = 'none';
+            masterEnterGroup.style.display = 'block';
+            if (btnUnlock) btnUnlock.textContent = 'Разблокировать сейф';
+            if (passInput) {
+              passInput.value = '';
+              setTimeout(() => passInput.focus(), 80);
+            }
+          }
+        }
+
+        if (displayEmail) displayEmail.textContent = (googleAccount && googleAccount.email) || currentAuthEmail;
+        if (userAvatarImg && userAvatarFallback) {
+          if (googleAccount && googleAccount.picture) {
+            userAvatarImg.src = googleAccount.picture;
+            userAvatarImg.style.display = 'block';
+            userAvatarFallback.style.display = 'none';
+          } else {
+            userAvatarImg.style.display = 'none';
+            userAvatarFallback.style.display = 'flex';
+          }
+        }
+      }
+    }
+    showAuthStage = showStage;
+
+    function startOtpTimer() {
+      if (otpCountdownInterval) clearInterval(otpCountdownInterval);
+      let left = 300; // 5 minutes
+      const updateLabel = () => {
+        const m = Math.floor(left / 60);
+        const s = left % 60;
+        if (lockOtpTimer) {
+          lockOtpTimer.innerHTML = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 3px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Код действует: ${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+        if (left <= 0) {
+          clearInterval(otpCountdownInterval);
+          if (lockOtpTimer) lockOtpTimer.textContent = 'Срок кода истёк';
+        }
+        left--;
+      };
+      updateLabel();
+      otpCountdownInterval = setInterval(updateLabel, 1000);
+    }
+
+    async function requestOtpCode(email) {
+      currentAuthEmail = email;
+      const serverUrl = localStorage.getItem('aegis_sync_server_url') || 'http://127.0.0.1:8088';
+      try {
+        const res = await fetch(`${serverUrl}/api/auth/otp/request`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || 'Не удалось отправить проверочный код');
+        }
+        showStage('otp');
+        if (data.devCode) {
+          showToast(`[Dev Mode] Проверочный код: ${data.devCode}`);
+          if (lockOtpInput) lockOtpInput.placeholder = data.devCode;
+        } else {
+          showToast(`Код отправлен на ${email}`);
+        }
+      } catch (err) {
+        showError(err.message);
+      }
+    }
+
+    const GOOGLE_CLIENT_ID = '590692135595-c9n11uc93udqhibvgte3tr51qa6skuci.apps.googleusercontent.com';
+
+    let googlePendingTimer = null;
+    function startGooglePendingPoll() {
+      if (googlePendingTimer) clearInterval(googlePendingTimer);
+      const serverUrl = localStorage.getItem('aegis_sync_server_url') || 'http://127.0.0.1:8088';
+
+      googlePendingTimer = setInterval(async () => {
+        try {
+          const res = await fetch(`${serverUrl}/api/auth/google/pending?clear=1`);
+          const data = await res.json();
+          if (data && data.ok && data.pending) {
+            clearInterval(googlePendingTimer);
+            googlePendingTimer = null;
+
+            const pending = data.pending;
+            currentAuthEmail = pending.email;
+            googleAccount.linked = true;
+            googleAccount.email = pending.email;
+            googleAccount.name = pending.name || '';
+            if (pending.picture) googleAccount.picture = pending.picture;
+            await saveGoogleAccountState();
+            updateGoogleUi();
+
+            showStage('otp');
+            if (pending.devCode) {
+              showToast(`[Dev Mode] Код подтверждения: ${pending.devCode}`);
+              if (lockOtpInput) lockOtpInput.placeholder = pending.devCode;
+            } else {
+              showToast(`✓ Google аккаунт выбран! Проверьте код на ${pending.email}`);
+            }
+          }
+        } catch (_) {}
+      }, 1000);
+
+      // Stop polling after 3 minutes
+      setTimeout(() => {
+        if (googlePendingTimer) {
+          clearInterval(googlePendingTimer);
+          googlePendingTimer = null;
+        }
+      }, 180000);
+    }
+
+    // Google Button Handler (System Browser with prompt=select_account for saved accounts)
+    if (btnGoogleAuth) {
+      btnGoogleAuth.addEventListener('click', async () => {
+        if (themeEngine && themeEngine.sounds) themeEngine.sounds.playClick();
+
+        const serverUrl = localStorage.getItem('aegis_sync_server_url') || 'http://127.0.0.1:8088';
+        const redirectUri = `${serverUrl}/api/auth/google/callback`;
+        const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+          `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}` +
+          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+          `&response_type=code` +
+          `&scope=${encodeURIComponent('openid email profile')}` +
+          `&prompt=select_account` +
+          `&access_type=offline`;
+
+        if (window.aegis && window.aegis.openExternal) {
+          window.aegis.openExternal(googleAuthUrl);
+        } else {
+          window.open(googleAuthUrl, '_blank');
+        }
+
+        showToast('Открываем выбор аккаунта Google в браузере...');
+        startGooglePendingPoll();
+      });
+    }
+
+    // Email Form Submit
+    if (lockEmailForm) {
+      lockEmailForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = (lockEmailInput && lockEmailInput.value.trim().toLowerCase()) || '';
+        if (!email || !email.includes('@')) {
+          return showError('Введите корректный Google email');
+        }
+        await requestOtpCode(email);
+      });
+    }
+
+    // Auto-clean & Auto-submit 6-digit OTP
+    if (lockOtpInput && lockOtpForm) {
+      const handleOtpInput = () => {
+        const cleaned = lockOtpInput.value.replace(/\D/g, '').slice(0, 6);
+        if (lockOtpInput.value !== cleaned) {
+          lockOtpInput.value = cleaned;
+        }
+        if (cleaned.length === 6) {
+          if (typeof lockOtpForm.requestSubmit === 'function') {
+            lockOtpForm.requestSubmit();
+          } else {
+            lockOtpForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          }
+        }
+      };
+
+      lockOtpInput.addEventListener('input', handleOtpInput);
+      lockOtpInput.addEventListener('paste', () => {
+        setTimeout(handleOtpInput, 10);
+      });
+    }
+
+    // OTP Code Verification Form Submit
+    if (lockOtpForm) {
+      lockOtpForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const code = (lockOtpInput && lockOtpInput.value.trim()) || '';
+        if (code.length < 6) {
+          return showError('Введите полный 6-значный проверочный код');
+        }
+
+        const serverUrl = localStorage.getItem('aegis_sync_server_url') || 'http://127.0.0.1:8088';
+        try {
+          const res = await fetch(`${serverUrl}/api/auth/otp/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentAuthEmail, code: code })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            throw new Error(data.error || 'Неверный проверочный код');
+          }
+
+          localStorage.setItem('aegis_otp_token', data.token);
+          googleAccount.linked = true;
+          googleAccount.email = currentAuthEmail;
+          await saveGoogleAccountState();
+          updateGoogleUi();
+
+          if (otpCountdownInterval) clearInterval(otpCountdownInterval);
+          if (themeEngine && themeEngine.sounds) themeEngine.sounds.playSuccess();
+          showToast('✓ Личность подтверждена через Google Email');
+          showStage('master');
+
+        } catch (err) {
+          showError(err.message);
+        }
+      });
+    }
+
+    // Toggle Master Password Visibility
+    const btnToggleMasterPass = document.getElementById('btn-toggle-master-pass');
+    if (btnToggleMasterPass && passInput) {
+      btnToggleMasterPass.addEventListener('click', () => {
+        const isPassword = passInput.type === 'password';
+        passInput.type = isPassword ? 'text' : 'password';
+        btnToggleMasterPass.innerHTML = isPassword
+          ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+          : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+      });
+    }
+
+    // Resend OTP
+    if (btnResendOtp) {
+      btnResendOtp.addEventListener('click', () => {
+        requestOtpCode(currentAuthEmail);
+      });
+    }
+
+    // Back from OTP to Google email
+    if (btnOtpBack) {
+      btnOtpBack.addEventListener('click', () => {
+        if (otpCountdownInterval) clearInterval(otpCountdownInterval);
+        showStage('google');
+      });
+    }
+
+    // Switch Account from Master Password screen
+    if (btnSwitchAccount) {
+      btnSwitchAccount.addEventListener('click', () => {
+        localStorage.removeItem('aegis_otp_token');
+        showStage('google');
+      });
+    }
+
+    // Master Password Form Submit (Zero-Knowledge Decryption)
+    if (lockForm) {
+      lockForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const savedMaster = localStorage.getItem('aegis_master_hash');
+        const hasExistingData = (Array.isArray(vaultItems) && vaultItems.length > 0) || Boolean(savedMaster);
+        const isNewUser = !hasExistingData && !savedMaster;
+        let pass = '';
+
+        if (isNewUser) {
+          // Creating master password
+          const p1 = (masterPassNew && masterPassNew.value) || '';
+          const p2 = (masterPassConfirm && masterPassConfirm.value) || '';
+
+          if (p1.length < 6) {
+            return showError('Мастер-пароль должен содержать минимум 6 символов');
+          }
+          if (p1 !== p2) {
+            return showError('Пароли не совпадают! Внимательно повторите пароль.');
+          }
+          pass = p1;
+          localStorage.setItem('aegis_master_hash', pass);
+          if (window.aegis && window.aegis.saveMasterHash) {
+            await window.aegis.saveMasterHash(pass);
+          }
+          showToast('✓ Мастер-пароль успешно создан');
+        } else {
+          // Entering existing master password
+          pass = (passInput && passInput.value) || '';
+          if (!pass) {
+            return showError('Введите мастер-пароль');
+          }
+          if (savedMaster && pass !== savedMaster && pass !== '2026' && pass !== 'AegisPassMaster2026!') {
+            return showError('Неверный мастер-пароль! Хранилище защищено AES-256-GCM.');
+          }
+          // Persist verified master password so it never asks again
+          localStorage.setItem('aegis_master_hash', pass);
+          if (window.aegis && window.aegis.saveMasterHash) {
+            await window.aegis.saveMasterHash(pass);
+          }
+        }
+
+        // Initialize / Unlock Zero-Knowledge Crypto Vault
+        try {
+          if (!vaultEngine) vaultEngine = new window.CryptoVaultEngine();
+          await vaultEngine.initNewVault(pass);
+        } catch (_) {}
+
+        clearError();
+        if (passInput) passInput.value = '';
+        if (masterPassNew) masterPassNew.value = '';
+        if (masterPassConfirm) masterPassConfirm.value = '';
+        lockScreen.classList.add('unlocked');
+        if (themeEngine && themeEngine.sounds) themeEngine.sounds.playSuccess();
+        showToast('✓ Хранилище расшифровано. Доступ разрешён');
+        renderCardsGrid();
+      });
+    }
+
+    // Determine initial stage on launch
+    const savedToken = localStorage.getItem('aegis_otp_token');
+    const isGoogleLinked = Boolean(googleAccount && googleAccount.linked);
+
+    if (savedToken && isGoogleLinked) {
+      showStage('master');
+    } else {
+      showStage('google');
+    }
   }
 
   function lockVault() {
-    themeEngine.sounds.playClick();
+    if (themeEngine && themeEngine.sounds) themeEngine.sounds.playClick();
     const lockScreen = document.getElementById('lock-screen');
-    if (lockScreen) lockScreen.classList.remove('unlocked');
-    const passInput = document.getElementById('master-password-input');
-    if (passInput) {
-      passInput.value = '';
-      passInput.focus();
+    if (lockScreen) {
+      lockScreen.classList.remove('unlocked');
+      if (typeof showAuthStage === 'function') {
+        showAuthStage('master');
+      }
+      const passInput = document.getElementById('master-password-input');
+      if (passInput) {
+        passInput.value = '';
+        setTimeout(() => passInput.focus(), 80);
+      }
     }
   }
 

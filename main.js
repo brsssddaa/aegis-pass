@@ -2,6 +2,13 @@ const { app, BrowserWindow, ipcMain, clipboard, shell, dialog } = require('elect
 const path = require('path');
 const fs = require('fs');
 
+process.on('uncaughtException', (err) => {
+  try {
+    const logPath = path.join(app.getPath('userData'), 'crash.log');
+    fs.writeFileSync(logPath, `${new Date().toISOString()} UNCAUGHT: ${err.stack || err.message}\n`, { flag: 'a' });
+  } catch (_) {}
+});
+
 let mainWindow = null;
 
 function createWindow() {
@@ -24,6 +31,24 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
+
+  mainWindow.webContents.on('did-fail-load', (e, code, desc, url) => {
+    try {
+      fs.appendFileSync(path.join(app.getPath('userData'), 'crash.log'), `did-fail-load: ${code} ${desc} ${url}\n`);
+    } catch (_) {}
+  });
+
+  mainWindow.webContents.on('render-process-gone', (e, details) => {
+    try {
+      fs.appendFileSync(path.join(app.getPath('userData'), 'crash.log'), `render-process-gone: ${JSON.stringify(details)}\n`);
+    } catch (_) {}
+  });
+
+  mainWindow.on('close', (e) => {
+    try {
+      fs.appendFileSync(path.join(app.getPath('userData'), 'crash.log'), `mainWindow close event called\n`);
+    } catch (_) {}
+  });
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
@@ -120,10 +145,15 @@ ipcMain.handle('vault-read-encrypted', async () => {
 
 let syncServer = null;
 function initSyncServer() {
+  const logPath = path.join(app.getPath('userData'), 'server_init.log');
   try {
+    fs.writeFileSync(logPath, `${new Date().toISOString()} Starting initSyncServer...\n`, { flag: 'a' });
     syncServer = require('./server/server.js');
+    fs.writeFileSync(logPath, `${new Date().toISOString()} syncServer required successfully!\n`, { flag: 'a' });
   } catch (e) {
-    console.error('Failed to init sync server:', e.message);
+    try {
+      fs.writeFileSync(logPath, `${new Date().toISOString()} ERROR: ${e.stack || e.message}\n`, { flag: 'a' });
+    } catch (_) {}
   }
 }
 
@@ -166,6 +196,46 @@ ipcMain.handle('settings-write', async (event, settings) => {
 
 // Google Identity & Master Key Enclave Storage
 const getGoogleIdentityPath = () => path.join(app.getPath('userData'), 'google_identity.json');
+const getMasterAuthPath = () => path.join(app.getPath('userData'), 'master_auth.json');
+
+ipcMain.handle('master-hash-get', async () => {
+  try {
+    const p = getMasterAuthPath();
+    if (fs.existsSync(p)) {
+      const data = JSON.parse(fs.readFileSync(p, 'utf-8'));
+      if (data && data.sealed) {
+        const { safeStorage } = require('electron');
+        if (safeStorage && safeStorage.isEncryptionAvailable()) {
+          const buf = Buffer.from(data.sealed, 'base64');
+          return safeStorage.decryptString(buf);
+        }
+      }
+      if (data && data.pass) return data.pass;
+    }
+  } catch (e) {
+    console.error('Failed to read master auth:', e);
+  }
+  return null;
+});
+
+ipcMain.handle('master-hash-save', async (event, pass) => {
+  try {
+    const p = getMasterAuthPath();
+    const { safeStorage } = require('electron');
+    let sealed = null;
+    if (safeStorage && safeStorage.isEncryptionAvailable()) {
+      sealed = safeStorage.encryptString(pass).toString('base64');
+    }
+    fs.writeFileSync(p, JSON.stringify({
+      sealed: sealed,
+      pass: sealed ? undefined : pass,
+      updatedAt: Date.now()
+    }, null, 2), 'utf-8');
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
 
 ipcMain.handle('google-account-get', async () => {
   try {

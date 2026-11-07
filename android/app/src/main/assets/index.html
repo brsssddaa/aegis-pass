@@ -2,283 +2,857 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Aegis Pass // Cloud Vault</title>
-  <meta name="theme-color" content="#090b10">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="./manifest.json">
-  <link rel="icon" href="./assets/icons/icon.png" type="image/png">
-  <link rel="stylesheet" href="./style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Google Identity Services (GIS) SDK -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aegis Pass - Password Manager</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="theme-monochrome">
+<body>
 
-  <!-- AUTH SCREEN (GOOGLE & PIN) -->
-  <div id="auth-screen" class="auth-overlay">
-    <div class="auth-box glass-panel">
-      <div class="auth-logo">
-        <svg class="shield-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          <path d="M9 12l2 2 4-4"/>
-        </svg>
-      </div>
-      <h2>AEGIS PASS</h2>
-      <p class="auth-subtitle">Облачное Zero-Knowledge хранилище</p>
+  <!-- Custom Dual-Layer Wallpaper Background Layer -->
+  <div id="kpm-bg-layer" class="kpm-bg-layer">
+    <!-- Layer 1: Base Wallpaper -->
+    <img id="kpm-bg-img" class="kpm-bg-img" alt="">
+    <!-- Layer 2: Overlay / Frame Wallpaper (Chains, Vignette, Stars) -->
+    <img id="kpm-bg-overlay-img" class="kpm-bg-overlay-img" alt="">
+    <!-- Ambient dark cyber vignette -->
+    <div class="kpm-bg-overlay"></div>
+  </div>
 
-      <!-- Google User Badge (shown if signed in via Google) -->
-      <div id="google-user-badge" class="google-user-badge hidden">
-        <img id="google-user-avatar" class="google-user-avatar" src="" alt="Google Avatar">
-        <div class="google-user-info">
-          <span id="google-user-name" class="google-user-name">Google User</span>
-          <span id="google-user-email" class="google-user-email">user@gmail.com</span>
+  <!-- Root Application Layout -->
+  <div class="kpm-layout">
+    
+    <!-- LEFT SIDEBAR -->
+    <aside class="kpm-sidebar">
+      <div class="kpm-brand">
+        <div class="kpm-brand-icon">
+          <img src="assets/logo_custom.png" alt="Aegis Pass">
         </div>
-        <button type="button" id="btn-google-signout" class="btn-text-sm" title="Сменить аккаунт Google">Выйти</button>
+        <div class="kpm-brand-text">
+          <div class="kpm-brand-title">Aegis Pass</div>
+          <div class="kpm-brand-subtitle">Password Manager</div>
+        </div>
       </div>
 
-      <!-- Google Sign-In Button Container -->
-      <div id="google-signin-section">
-        <button type="button" id="btn-google-login" class="btn-google">
-          <svg viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+      <div class="kpm-menu-group">
+        <div class="kpm-menu-item" data-view="all">
+          <span class="kpm-plate-glow"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span class="kpm-menu-label">Все записи</span>
+          <span class="kpm-badge" id="badge-count-all">0</span>
+        </div>
+
+        <div class="kpm-menu-item active" data-view="accounts">
+          <span class="kpm-plate-glow"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span class="kpm-menu-label">Аккаунты</span>
+          <span class="kpm-badge" id="badge-count-accounts">0</span>
+        </div>
+
+        <div class="kpm-menu-item" data-view="games">
+          <span class="kpm-plate-glow"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="4"/></svg>
+          <span class="kpm-menu-label">Игры</span>
+          <span class="kpm-badge" id="badge-count-games">0</span>
+        </div>
+
+        <div class="kpm-menu-item" data-view="cards">
+          <span class="kpm-plate-glow"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          <span class="kpm-menu-label">Банковские карты</span>
+          <span class="kpm-badge" id="badge-count-cards">0</span>
+        </div>
+
+        <div class="kpm-menu-item" data-view="notes">
+          <span class="kpm-plate-glow"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span class="kpm-menu-label">Заметки</span>
+          <span class="kpm-badge" id="badge-count-notes">0</span>
+        </div>
+
+        <div class="kpm-menu-item" data-view="generator">
+          <span class="kpm-plate-glow"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+          <span class="kpm-menu-label">Генератор паролей</span>
+        </div>
+      </div>
+
+      <!-- Bottom controls: Google Account Avatar & Settings -->
+      <div class="kpm-sidebar-bottom">
+        <div class="kpm-google-avatar-wrapper" style="position: relative;">
+          <div class="kpm-google-avatar-btn" id="btn-google-account" title="Google Аккаунт: Привязка Мастер-ключа">
+            <div class="kpm-google-avatar-circle" id="google-avatar-circle">
+              <img id="google-avatar-img" src="" alt="Google Avatar" style="display: none;">
+              <div id="google-avatar-fallback" class="kpm-google-fallback-g">
+                <svg viewBox="0 0 48 48" width="20" height="20">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                </svg>
+              </div>
+            </div>
+            <span class="kpm-google-shield-badge" id="google-shield-badge" title="Мастер-ключ защищен Google ID">
+              <svg viewBox="0 0 24 24" width="9" height="9" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+            </span>
+          </div>
+
+          <!-- Avatar Popover with Red Logout Button -->
+          <div class="avatar-logout-popover" id="avatar-logout-popover" style="display: none;">
+            <div class="avatar-popover-info">
+              <div class="avatar-popover-user" id="avatar-popover-email">hddfi@gmail.com</div>
+              <div class="avatar-popover-sub" id="avatar-popover-status">Google ID • Zero-Knowledge</div>
+            </div>
+            <button class="btn-logout-red" id="btn-avatar-logout" title="Выйти из аккаунта">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <span>Выход</span>
+            </button>
+          </div>
+        </div>
+        <button class="kpm-sidebar-icon-btn" id="btn-nav-settings" title="Настройки">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <main class="kpm-main">
+      
+      <!-- TOP TOOLBAR -->
+      <header class="kpm-topbar">
+        <div class="kpm-topbar-left">
+          <h1 class="kpm-section-title" id="view-title">Аккаунты</h1>
+
+          <button class="kpm-btn-primary" id="btn-add-entry">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span id="btn-add-entry-label">Добавить запись</span>
+          </button>
+
+          <div class="kpm-filter-group" id="filter-pills-bar">
+            <button class="kpm-filter-pill active" data-filter="all">Все</button>
+            <button class="kpm-filter-pill" data-filter="recent">Недавние</button>
+            <button class="kpm-filter-pill" data-filter="favorites">Избранное</button>
+          </div>
+        </div>
+
+        <div class="kpm-topbar-right">
+          <!-- View switcher (Grid vs List) -->
+          <div class="kpm-view-toggle">
+            <button class="kpm-icon-btn active" id="btn-view-grid" title="Сетка">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            </button>
+            <button class="kpm-icon-btn" id="btn-view-list" title="Список">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </button>
+          </div>
+
+          <!-- Search Box -->
+          <div class="kpm-search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="kpm-search-input" placeholder="Поиск (Ctrl+F)">
+          </div>
+
+          <!-- Lock & Exit Button -->
+          <button class="kpm-icon-btn" id="btn-topbar-lock" title="Заблокировать сейф и выйти">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </button>
+
+          <!-- Window Controls -->
+          <div class="kpm-window-controls">
+            <button class="kpm-win-btn" id="btn-win-min" title="Свернуть">
+              <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <button class="kpm-win-btn" id="btn-win-max" title="Развернуть">
+              <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+            </button>
+            <button class="kpm-win-btn win-close" id="btn-win-close" title="Закрыть">
+              <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- CONTENT BODY -->
+      <div class="kpm-content-scroll">
+        
+        <!-- 1. ACCOUNTS, GAMES & ENTRIES VIEW PANE -->
+        <section class="kpm-view-pane active" id="pane-vault">
+          <div class="kpm-cards-grid" id="kpm-cards-container">
+            <!-- Dynamic Kaspersky-style cards injected here -->
+          </div>
+        </section>
+
+        <!-- 2. GENERATOR PANE -->
+        <section class="kpm-view-pane" id="pane-generator">
+          <div style="max-width: 620px; margin: 0 auto;">
+            <div class="kpm-section-card">
+              <div class="kpm-section-header">
+                <span>Генератор криптостойких паролей</span>
+                <button class="kpm-btn-secondary" id="btn-gen-refresh">Перегенерировать</button>
+              </div>
+
+              <div class="kpm-field-row" style="padding: 14px 18px; margin-bottom: 16px;">
+                <span id="gen-output" style="font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 1px;">-</span>
+                <button class="kpm-field-copy-btn" id="btn-gen-copy" title="Скопировать" style="width: 32px; height: 32px;">
+                  <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+              </div>
+
+              <div class="kpm-slider-row">
+                <div class="kpm-slider-meta">
+                  <span>Длина пароля</span>
+                  <span class="kpm-slider-val" id="gen-len-label">18 символов</span>
+                </div>
+                <input type="range" id="gen-len-slider" min="8" max="64" value="18">
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); cursor: pointer;">
+                  <input type="checkbox" id="gen-opt-upper" checked> Заглавные буквы (A-Z)
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); cursor: pointer;">
+                  <input type="checkbox" id="gen-opt-lower" checked> Строчные буквы (a-z)
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); cursor: pointer;">
+                  <input type="checkbox" id="gen-opt-nums" checked> Цифры (0-9)
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); cursor: pointer;">
+                  <input type="checkbox" id="gen-opt-syms" checked> Спецсимволы (!@#$%^&*)
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. SETTINGS PANE (WITH CONSOLIDATED APPEARANCE & WALLPAPERS) -->
+        <section class="kpm-view-pane" id="pane-settings">
+          <div style="max-width: 780px; margin: 0 auto;">
+            
+            <!-- Sleek Top Subtabs Bar -->
+            <div class="kpm-subtabs-nav">
+              <button class="kpm-subtab-btn active" data-subtab="settings-appearance">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+                <span>Оформление и обои</span>
+              </button>
+              <button class="kpm-subtab-btn" data-subtab="settings-storage">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                <span>Хранилище данных</span>
+              </button>
+              <button class="kpm-subtab-btn" data-subtab="settings-general">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span>Параметры</span>
+              </button>
+            </div>
+
+            <!-- SUBTAB 1: APPEARANCE & WALLPAPERS & COLOR ACCENT -->
+            <div class="kpm-subtab-pane active" id="subtab-pane-settings-appearance">
+              
+              <!-- 1. Wallpaper Profiles Section (Widescreen 16:9.5 cards) -->
+              <div class="kpm-section-card">
+                <div class="kpm-section-header">
+                  <span>Профили фона и обоев</span>
+                  <span class="kpm-badge" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">ЛКМ — Основа | ПКМ — Меню (Оверлей/Основа)</span>
+                </div>
+
+                <!-- Wide rectangular preview profiles grid (16:9.5) -->
+                <div class="kpm-profiles-grid" id="wallpapers-profiles-container">
+                  <!-- Injected profile cards -->
+                </div>
+
+                <!-- Wallpapers Actions Bar -->
+                <div class="kpm-btn-row">
+                  <button class="kpm-btn-secondary" id="btn-open-wallpapers-folder">
+                    <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    <span>Открыть папку</span>
+                  </button>
+                  <button class="kpm-btn-secondary" id="btn-add-wallpaper-file">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Добавить обои</span>
+                  </button>
+                  <button class="kpm-btn-secondary" id="btn-refresh-wallpapers">
+                    <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    <span>Обновить</span>
+                  </button>
+                  <button class="kpm-btn-secondary" id="btn-reset-wallpaper">
+                    <span>Сбросить фон</span>
+                  </button>
+                </div>
+
+                <!-- Layers Status Chips -->
+                <div class="kpm-layers-info-bar" style="margin-top: 14px;">
+                  <div class="kpm-layer-chip">
+                    <span class="kpm-layer-dot base"></span>
+                    <span class="kpm-layer-chip-title">Основной фон:</span>
+                    <b id="val-base-wp-name">--</b>
+                  </div>
+                  <div class="kpm-layer-chip" id="chip-overlay-wrap">
+                    <span class="kpm-layer-dot overlay"></span>
+                    <span class="kpm-layer-chip-title">Оверлей / Рамка:</span>
+                    <b id="val-overlay-wp-name">--</b>
+                    <button class="kpm-layer-remove-btn" id="btn-clear-overlay" title="Снять оверлей">×</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. Wallpaper Display Parameters -->
+              <div class="kpm-section-card">
+                <div class="kpm-section-header">
+                  <span>Параметры фона</span>
+                </div>
+
+                <div class="kpm-slider-row" style="margin-top: 6px; align-items: center; justify-content: space-between; display: flex;">
+                  <div class="kpm-slider-meta" style="margin-bottom: 0;">
+                    <span>Масштабирование фона</span>
+                  </div>
+                  <select id="select-wallpaper-fit" class="kpm-select-cyber">
+                    <option value="cover">Заполнение (Cover, с сохранением пропорций)</option>
+                    <option value="fill">Растянуть на весь размер окна (Fill)</option>
+                    <option value="contain">Вписать целиком (Contain)</option>
+                  </select>
+                </div>
+
+                <div class="kpm-slider-row">
+                  <div class="kpm-slider-meta">
+                    <span>Яркость фона</span>
+                    <span class="kpm-slider-val" id="val-bg-brightness">100%</span>
+                  </div>
+                  <input type="range" id="slider-bg-brightness" min="20" max="180" value="100">
+                </div>
+
+                <div class="kpm-slider-row">
+                  <div class="kpm-slider-meta">
+                    <span>Прозрачность обоев</span>
+                    <span class="kpm-slider-val" id="val-bg-opacity">25%</span>
+                  </div>
+                  <input type="range" id="slider-bg-opacity" min="0" max="85" value="25">
+                </div>
+
+                <div class="kpm-slider-row">
+                  <div class="kpm-slider-meta">
+                    <span>Размытие фона (Backdrop Blur)</span>
+                    <span class="kpm-slider-val" id="val-bg-blur">10px</span>
+                  </div>
+                  <input type="range" id="slider-bg-blur" min="0" max="30" value="10">
+                </div>
+              </div>
+
+              <!-- 3. Glass Transparency & Blur Adjustments -->
+              <div class="kpm-section-card">
+                <div class="kpm-section-header">
+                  <span>Прозрачность интерфейса и стеклянный эффект</span>
+                </div>
+
+                <div class="kpm-slider-row" style="margin-top: 4px;">
+                  <div class="kpm-slider-meta">
+                    <span>Прозрачность всех табов и панелей</span>
+                    <span class="kpm-slider-val" id="val-tabs-opacity">70%</span>
+                  </div>
+                  <input type="range" id="slider-tabs-opacity" min="10" max="100" value="70">
+                </div>
+
+                <div class="kpm-slider-row">
+                  <div class="kpm-slider-meta">
+                    <span>Прозрачность бокового меню</span>
+                    <span class="kpm-slider-val" id="val-sidebar-opacity">80%</span>
+                  </div>
+                  <input type="range" id="slider-sidebar-opacity" min="15" max="100" value="80">
+                </div>
+
+                <div class="kpm-slider-row">
+                  <div class="kpm-slider-meta">
+                    <span>Прозрачность карточек паролей</span>
+                    <span class="kpm-slider-val" id="val-card-opacity">70%</span>
+                  </div>
+                  <input type="range" id="slider-card-opacity" min="15" max="100" value="70">
+                </div>
+
+                <div class="kpm-slider-row">
+                  <div class="kpm-slider-meta">
+                    <span>Размытие стеклянных панелей (Backdrop Blur)</span>
+                    <span class="kpm-slider-val" id="val-glass-blur">16px</span>
+                  </div>
+                  <input type="range" id="slider-glass-blur" min="0" max="40" value="16">
+                </div>
+              </div>
+
+              <!-- 4. Single Cyber Color Picker Section -->
+              <div class="kpm-section-card">
+                <div class="kpm-section-header">
+                  <span>Цветовой акцент интерфейса</span>
+                  <span class="kpm-badge" style="background: rgba(var(--accent-rgb, 0, 229, 255), 0.16); color: var(--accent-light);">Спектр & Яркость</span>
+                </div>
+                <div id="cyber-picker-settings"></div>
+              </div>
+
+            </div>
+
+            <!-- SUBTAB 2: STORAGE & BACKUPS -->
+            <div class="kpm-subtab-pane" id="subtab-pane-settings-storage">
+              
+              <!-- Storage Overview Card -->
+              <div class="kpm-section-card">
+                <div class="kpm-section-header">
+                  <span>Локальное хранилище данных</span>
+                  <span class="kpm-badge" style="background: rgba(0,214,143,0.15); color: var(--accent-light);">Активно</span>
+                </div>
+
+                <div class="kpm-info-grid">
+                  <div class="kpm-info-box">
+                    <div class="kpm-info-label">Всего записей</div>
+                    <div class="kpm-info-val" id="stat-total-items">0</div>
+                  </div>
+                  <div class="kpm-info-box">
+                    <div class="kpm-info-label">Игры</div>
+                    <div class="kpm-info-val" id="stat-games-items">0</div>
+                  </div>
+                  <div class="kpm-info-box">
+                    <div class="kpm-info-label">Аккаунты</div>
+                    <div class="kpm-info-val" id="stat-accounts-items">0</div>
+                  </div>
+                  <div class="kpm-info-box">
+                    <div class="kpm-info-label">Банковские карты</div>
+                    <div class="kpm-info-val" id="stat-cards-items">0</div>
+                  </div>
+                  <div class="kpm-info-box">
+                    <div class="kpm-info-label">Заметки</div>
+                    <div class="kpm-info-val" id="stat-notes-items">0</div>
+                  </div>
+                  <div class="kpm-info-box">
+                    <div class="kpm-info-label">Размер файла базы</div>
+                    <div class="kpm-info-val" id="stat-storage-size">-- КБ</div>
+                  </div>
+                </div>
+
+                <div class="kpm-field-row" style="padding: 10px 14px; margin-top: 14px; font-size: 12px; color: var(--text-dim); word-break: break-all;">
+                  <span id="storage-file-path">C:\Users\...</span>
+                </div>
+              </div>
+
+              <!-- Export / Import Backups -->
+              <div class="kpm-section-card">
+                <div class="kpm-section-header">
+                  <span>Резервное копирование и синхронизация</span>
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5;">
+                  Вы можете экспортировать полную резервную копию базы данных в отдельный файл или восстановить сохраненные данные.
+                </div>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                  <button class="kpm-btn-secondary" id="btn-export-backup">
+                    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>Экспорт базы (.json)</span>
+                  </button>
+                  <button class="kpm-btn-secondary" id="btn-import-backup">
+                    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span>Импорт базы</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Google Email OTP & Zero-Knowledge Architecture Card -->
+              <div class="kpm-section-card">
+                <div class="kpm-section-header">
+                  <span>Вход через Google с кодом на почту (Zero-Knowledge)</span>
+                  <span class="kpm-badge" id="badge-otp-status" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">Kaspersky Security Model</span>
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5;">
+                  Двухфакторный вход с одноразовым 6-значным кодом на ваш Google Gmail. Сервер хранит <b>только зашифрованный AES-256-GCM контейнер</b>. Мастер-пароль и открытые данные никогда не передаются в сеть и не хранятся на сервере.
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+                  <div style="flex: 1; min-width: 220px;">
+                    <label style="display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 5px;">Google Email</label>
+                    <input type="email" id="input-otp-email" class="form-control" placeholder="user@gmail.com" value="hddfi@gmail.com" style="width: 100%; font-size: 13px;">
+                  </div>
+                  <div style="display: flex; align-items: flex-end;">
+                    <button class="kpm-btn-secondary" id="btn-request-otp" style="padding: 9px 16px;">
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                      <span>Получить код на почту</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- OTP Code input row (hidden until code requested) -->
+                <div id="otp-verify-row" style="display: none; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 10px; padding: 14px; margin-bottom: 14px;">
+                  <div style="font-size: 12px; color: var(--accent-light); margin-bottom: 8px;">
+                    Введите 6-значный проверочный код из письма:
+                  </div>
+                  <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <input type="text" id="input-otp-code" maxlength="6" class="form-control" placeholder="______" style="width: 140px; font-size: 18px; letter-spacing: 4px; text-align: center; font-family: monospace; font-weight: 700;">
+                    <button class="kpm-btn-primary" id="btn-verify-otp">
+                      <span>Подтвердить и войти</span>
+                    </button>
+                    <span id="otp-timer-label" style="font-size: 12px; color: var(--text-dim);">Код действителен: 5:00</span>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                  <button class="kpm-btn-primary" id="btn-sync-zk-now" style="padding: 7px 16px;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    <span>Синхронизировать Zero-Knowledge</span>
+                  </button>
+                  <span id="otp-auth-status" style="font-size: 12px; color: #00ff88;">✓ Статус: Готов к отправке кода</span>
+                </div>
+              </div>
+
+              <!-- Render Cloud 24/7 Section -->
+              <div class="kpm-section-card">
+                <div class="kpm-section-header">
+                  <span>Render Cloud 24/7 Сервер</span>
+                  <span class="kpm-badge" id="render-cloud-badge" style="background: rgba(0, 255, 136, 0.15); color: #00ff88;">Готов к подключению</span>
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5;">
+                  Облачный сервер на платформе Render обеспечивает круглосуточный доступ к вашим паролям с любого устройства (телефон Poco X7 Pro, ПК) без необходимости держать домашний компьютер включенным.
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                  <label style="display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px;">URL сервера на Render</label>
+                  <input type="text" id="render-cloud-url" class="form-control" placeholder="https://aegis-pass-server.onrender.com" style="font-family: monospace; font-size: 13px;">
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                  <button class="kpm-btn-primary" id="btn-save-render-cloud">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    <span>Сохранить и Синхронизировать</span>
+                  </button>
+                  <span id="render-cloud-status" style="font-size: 12px; color: var(--text-dim);">Статус: Локальное хранилище</span>
+                </div>
+              </div>
+
+              <!-- Local & LAN Server Sync Section -->
+              <div class="kpm-section-card">
+                <div class="kpm-section-header">
+                  <span>Локальный сервер (Домашняя сеть & Tailscale)</span>
+                  <span class="kpm-badge" id="server-status-badge" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">Активен (8088)</span>
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5;">
+                  Локальный сервер запущен прямо на этом ПК для мгновенной синхронизации по локальной сети Wi-Fi или через защищённый тоннель Tailscale.
+                </div>
+                <div class="kpm-info-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 14px;">
+                  <div class="kpm-info-box">
+                    <div class="kpm-info-label">Локальный адрес (Wi-Fi)</div>
+                    <div class="kpm-info-val" id="server-local-ip" style="font-size: 13px; font-family: monospace; color: #00e5ff;">http://192.168.5.4:8088</div>
+                  </div>
+                  <div class="kpm-info-box">
+                    <div class="kpm-info-label">Tailscale (Телефон везде)</div>
+                    <div class="kpm-info-val" id="server-tailscale-ip" style="font-size: 13px; font-family: monospace; color: #00ff88;">http://100.109.8.27:8088</div>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                  <button class="kpm-btn-secondary" id="btn-open-server-web">
+                    <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    <span>Открыть Веб-Хранилище</span>
+                  </button>
+                  <span style="font-size: 12px; color: var(--text-dim);">PIN-код доступа: <b>2026</b></span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- SUBTAB 3: GENERAL & PARAMS -->
+            <div class="kpm-subtab-pane" id="subtab-pane-settings-general">
+              
+              <div class="kpm-section-card">
+                <div class="kpm-section-header">
+                  <span>Параметры безопасности</span>
+                </div>
+
+                <div class="kpm-slider-row" style="margin-top: 0;">
+                  <div class="kpm-slider-meta">
+                    <span>Автоблокировка при неактивности</span>
+                  </div>
+                  <select id="select-autolock-timer" class="form-control" style="width: auto; margin-top: 4px;">
+                    <option value="1">Через 1 минуту</option>
+                    <option value="5">Через 5 минут</option>
+                    <option value="15">Через 15 минут</option>
+                    <option value="0" selected>Никогда (по умолчанию)</option>
+                  </select>
+                </div>
+
+                <div class="kpm-slider-row">
+                  <div class="kpm-slider-meta">
+                    <span>Звуковые эффекты нажатий</span>
+                  </div>
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); cursor: pointer;">
+                    <input type="checkbox" id="check-ui-sounds" checked> Включено
+                  </label>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Item Edit/Add Modal Window -->
+  <div class="modal-overlay" id="item-modal">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h3 class="modal-title" id="modal-heading-text">Новая запись</h3>
+          <span class="kpm-category-pill" id="modal-category-badge">Игры</span>
+        </div>
+        <button class="kpm-win-btn win-close" id="btn-modal-close" title="Закрыть (Esc)">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <form id="item-form" style="display: flex; flex-direction: column; gap: 14px;">
+        <input type="hidden" id="form-item-id">
+        <input type="hidden" id="form-item-category" value="accounts">
+
+        <!-- Special Game Assistant Block (shown only for games category) -->
+        <div class="kpm-game-helper" id="modal-game-helper" style="display: none;">
+          <div class="kpm-game-helper-head">
+            <span class="kpm-game-helper-title">Выбор игры на компьютере</span>
+            <button type="button" class="kpm-btn-secondary" id="btn-select-game-exe">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              <span>Выбрать .exe / ярлык игры</span>
+            </button>
+          </div>
+          <div class="kpm-game-chips-label">Быстрый выбор популярной игры:</div>
+          <div class="kpm-game-chips" id="game-quick-chips">
+            <span class="kpm-game-chip" data-title="Steam">Steam</span>
+            <span class="kpm-game-chip" data-title="Discord">Discord</span>
+            <span class="kpm-game-chip" data-title="Roblox">Roblox</span>
+            <span class="kpm-game-chip" data-title="Dota 2">Dota 2</span>
+            <span class="kpm-game-chip" data-title="Counter-Strike 2">CS2</span>
+            <span class="kpm-game-chip" data-title="Minecraft">Minecraft</span>
+            <span class="kpm-game-chip" data-title="Fortnite">Fortnite</span>
+            <span class="kpm-game-chip" data-title="War Thunder">War Thunder</span>
+            <span class="kpm-game-chip" data-title="Genshin Impact">Genshin</span>
+            <span class="kpm-game-chip" data-title="Grand Theft Auto V">GTA V</span>
+            <span class="kpm-game-chip" data-title="Rust">Rust</span>
+            <span class="kpm-game-chip" data-title="Apex Legends">Apex Legends</span>
+            <span class="kpm-game-chip" data-title="Epic Games">Epic Games</span>
+            <span class="kpm-game-chip" data-title="Lethal Company">Lethal Company</span>
+          </div>
+        </div>
+
+        <div class="form-group" id="group-form-title">
+          <label class="form-label" for="form-title" id="label-form-title">Название</label>
+          <input type="text" id="form-title" class="form-control" placeholder="Название игры, сервиса или сайта..." required>
+        </div>
+
+        <div class="form-group" id="group-form-username">
+          <label class="form-label" for="form-username" id="label-form-username">Логин / Email / Никнейм</label>
+          <input type="text" id="form-username" class="form-control" placeholder="Логин, почта или номер игрока..." required>
+        </div>
+
+        <div class="form-group" id="group-form-password">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label class="form-label" for="form-password" id="label-form-password">Пароль</label>
+            <button type="button" class="kpm-btn-secondary" id="btn-form-gen-pass" style="padding: 2px 8px; font-size: 11px;">Сгенерировать</button>
+          </div>
+          <input type="password" id="form-password" class="form-control" placeholder="Секретный пароль" required>
+        </div>
+
+        <div class="form-group" id="group-form-url">
+          <label class="form-label" for="form-url">Адрес сайта (необязательно)</label>
+          <input type="text" id="form-url" class="form-control" placeholder="https://...">
+        </div>
+
+        <div class="form-group" id="group-form-notes">
+          <label class="form-label" for="form-notes">Заметки / Дополнительно</label>
+          <textarea id="form-notes" class="form-control" rows="2" placeholder="Сервер, секретный пин-код или комментарий..."></textarea>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
+          <button type="button" class="kpm-btn-secondary" id="btn-form-cancel">Отмена</button>
+          <button type="submit" class="kpm-btn-primary" id="btn-form-save" style="padding: 9px 20px;">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Floating Context Menu for Cards -->
+  <div class="kpm-dropdown-menu" id="card-context-menu" style="display: none;">
+    <div class="kpm-dropdown-item" data-action="edit">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <span>Редактировать</span>
+    </div>
+    <div class="kpm-dropdown-item" data-action="copy-login">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Скопировать логин</span>
+    </div>
+    <div class="kpm-dropdown-item" data-action="copy-password">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span>Скопировать пароль</span>
+    </div>
+    <div class="kpm-dropdown-divider"></div>
+    <div class="kpm-dropdown-item danger" data-action="delete">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      <span>Удалить запись</span>
+    </div>
+  </div>
+
+  <!-- Master Password & Zero-Knowledge Google Auth Screen -->
+  <div class="lock-screen-overlay" id="lock-screen">
+    <div class="lock-card" id="lock-card-main">
+      <div class="lock-card-glow-bar"></div>
+
+      <div class="lock-logo-box">
+        <img src="assets/logo_custom.png" alt="Aegis Pass">
+      </div>
+
+      <div class="lock-title-box">
+        <div class="lock-title">Aegis Pass</div>
+        <div class="lock-subtitle" id="lock-stage-subtitle">Безопасный Zero-Knowledge вход</div>
+      </div>
+
+      <!-- STAGE 1: Google Sign-In & Email OTP Request -->
+      <div id="lock-stage-google" class="lock-stage-block" style="display: none;">
+        <button type="button" class="lock-google-btn" id="btn-lock-google-auth">
+          <svg viewBox="0 0 48 48" width="19" height="19">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
           </svg>
           <span>Войти через Google</span>
         </button>
-        <div id="g_id_signin_hidden" style="display:none;"></div>
-      </div>
 
-      <div class="auth-divider">
-        <span>Мастер-PIN</span>
-      </div>
-
-      <!-- Master PIN / Passphrase form -->
-      <form id="pin-form" class="pin-form">
-        <label for="pin-input">Мастер-PIN для шифрования</label>
-        <div class="pin-input-wrap">
-          <input type="password" id="pin-input" maxlength="24" placeholder="PIN" autofocus autocomplete="current-password" inputmode="numeric">
-          <button type="submit" class="btn-primary" id="btn-pin-submit">Войти</button>
-        </div>
-        <p class="auth-hint">PIN по умолчанию: <b>2026</b></p>
-        <div id="auth-error" class="auth-error"></div>
-      </form>
-
-      <!-- Cloud Server Settings Toggle -->
-      <button type="button" id="btn-toggle-settings" class="cloud-settings-toggle">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span>Параметры облачного сервера</span>
-      </button>
-
-      <div id="cloud-settings-panel" class="cloud-settings-panel hidden">
-        <label for="server-url-input">URL Cloud Сервера (Node.js / Render / Tailscale)</label>
-        <input type="text" id="server-url-input" placeholder="Оставьте пустым для авто-выбора или укажите URL">
-        <label for="google-client-id-input">Google Client ID (OAuth)</label>
-        <input type="text" id="google-client-id-input" placeholder="348808136485-2hf1oc4n57v0m5gdoth2arb5qmvqs27m...">
-        <button type="button" id="btn-save-settings" class="btn-primary cloud-save-btn">Применить параметры</button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- MAIN APP CONTAINER -->
-  <div id="app-container" class="app-layout">
-    
-    <!-- TOP BAR -->
-    <header class="topbar glass-panel">
-      <div class="brand">
-        <svg class="brand-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          <path d="M9 12l2 2 4-4"/>
-        </svg>
-        <div class="brand-text">
-          <span class="brand-title">AEGIS PASS</span>
-          <span class="brand-version" id="header-cloud-mode">CLOUD SYNC</span>
-        </div>
-      </div>
-
-      <div class="search-box">
-        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <input type="text" id="search-input" placeholder="Поиск паролей, сайтов, логинов...">
-        <button id="search-clear" class="btn-icon hidden">&times;</button>
-      </div>
-
-      <div class="topbar-actions">
-        <!-- Topbar Google Account Badge -->
-        <div id="topbar-user" class="topbar-user hidden" title="Google Аккаунт">
-          <img id="topbar-avatar" class="topbar-avatar" src="" alt="Avatar">
-          <span id="topbar-username" class="topbar-username desktop-only">Аккаунт</span>
+        <div class="lock-divider">
+          <span>или по email</span>
         </div>
 
-        <div id="sync-status" class="sync-badge" title="Статус синхронизации">
-          <span class="sync-dot"></span>
-          <span class="sync-label">Синхронизировано</span>
+        <form id="lock-email-form" class="lock-form">
+          <div class="lock-input-wrap">
+            <svg class="lock-input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            <input type="email" id="lock-email-input" class="lock-input" placeholder="Введите ваш email..." required>
+          </div>
+          <button type="submit" class="lock-submit-btn" id="btn-lock-send-otp">
+            <span>Получить код на почту</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </form>
+      </div>
+
+      <!-- STAGE 2: Email OTP 2FA Code Verification -->
+      <div id="lock-stage-otp" class="lock-stage-block" style="display: none;">
+        <div class="lock-otp-badge-card">
+          <div class="lock-otp-badge-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#00e5ff" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div class="lock-otp-badge-meta">
+            <span class="lock-otp-badge-label">Код отправлен на:</span>
+            <strong id="lock-otp-email-target" class="lock-otp-badge-target">user@gmail.com</strong>
+          </div>
         </div>
-        <button id="btn-open-generator" class="btn-secondary" title="Генератор паролей">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><circle cx="12" cy="12" r="3"/></svg>
-          <span class="desktop-only">Генератор</span>
+
+        <form id="lock-otp-form" class="lock-form">
+          <div class="lock-input-wrap">
+            <input type="text" id="lock-otp-input" class="lock-input lock-otp-field" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="000000" autocomplete="one-time-code" autofocus required>
+          </div>
+
+          <div class="lock-otp-timer-row">
+            <span id="lock-otp-timer">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 3px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Код действует: 5:00
+            </span>
+            <button type="button" class="lock-resend-btn" id="btn-lock-resend-otp">Отправить повторно</button>
+          </div>
+
+          <button type="submit" class="lock-submit-btn" id="btn-lock-verify-otp">
+            <span>Подтвердить код</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <button type="button" class="lock-back-btn" id="btn-lock-otp-back">← Назад к выбору почты</button>
+        </form>
+      </div>
+
+      <!-- STAGE 3: Master Password Decryption (Zero-Knowledge) -->
+      <div id="lock-stage-master" class="lock-stage-block">
+        <div class="lock-user-pill">
+          <img id="lock-user-avatar" src="" alt="Google Avatar" style="display: none;">
+          <div id="lock-user-avatar-fallback" class="lock-user-fallback">G</div>
+          <div class="lock-user-meta">
+            <div class="lock-user-email" id="lock-display-email">hddfi@gmail.com</div>
+            <div class="lock-user-badge">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Google ID подтвержден</span>
+            </div>
+          </div>
+        </div>
+
+        <form id="lock-form" class="lock-form">
+          <!-- Existing account: Enter master password -->
+          <div id="master-enter-group" style="width: 100%;">
+            <div class="lock-input-wrap">
+              <svg class="lock-input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="master-password-input" class="lock-input" placeholder="Введите мастер-пароль..." autofocus>
+              <button type="button" class="lock-pass-toggle" id="btn-toggle-master-pass" title="Показать / скрыть пароль">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- New account: Create master password -->
+          <div id="master-create-group" style="display: none; width: 100%; flex-direction: column; gap: 8px;">
+            <div class="lock-create-hint">
+              Придумайте надёжный мастер-пароль (от 6 символов). Он будет вашим ключом шифрования AES-256:
+            </div>
+            <div class="lock-input-wrap">
+              <svg class="lock-input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="master-password-new" class="lock-input" placeholder="Придумайте мастер-пароль...">
+            </div>
+            <div class="lock-input-wrap">
+              <svg class="lock-input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="master-password-confirm" class="lock-input" placeholder="Повторите мастер-пароль...">
+            </div>
+          </div>
+
+          <button type="submit" class="lock-submit-btn" id="btn-unlock">
+            <span>Разблокировать сейф</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </form>
+
+        <button type="button" class="lock-switch-btn" id="btn-lock-switch-account">
+          <span>Сменить Google аккаунт / Выйти</span>
         </button>
-        <button id="btn-add-item" class="btn-primary" title="Добавить запись">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span class="desktop-only">Добавить</span>
-        </button>
-        <button id="btn-lock" class="btn-icon" title="Заблокировать">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        </button>
       </div>
-    </header>
 
-    <!-- CATEGORIES BAR -->
-    <nav class="categories-bar">
-      <button class="cat-pill active" data-cat="all">Все (<span id="count-all">0</span>)</button>
-      <button class="cat-pill" data-cat="accounts">Аккаунты (<span id="count-accounts">0</span>)</button>
-      <button class="cat-pill" data-cat="games">Игры (<span id="count-games">0</span>)</button>
-      <button class="cat-pill" data-cat="cards">Карты (<span id="count-cards">0</span>)</button>
-      <button class="cat-pill" data-cat="notes">Заметки (<span id="count-notes">0</span>)</button>
-      <button class="cat-pill" data-cat="favorites">Избранное (<span id="count-favorites">0</span>)</button>
-    </nav>
-
-    <!-- MAIN VAULT CONTENT -->
-    <main class="vault-container">
-      <div id="vault-grid" class="vault-grid">
-        <!-- Cards dynamically rendered here -->
-      </div>
-      <div id="empty-state" class="empty-state hidden">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-        </svg>
-        <h3>Хранилище пусто</h3>
-        <p>Нажмите «Добавить», чтобы создать первую запись</p>
-      </div>
-    </main>
-
-    <!-- BOTTOM MOBILE NAVIGATION BAR -->
-    <div class="mobile-bottom-bar">
-      <button class="mobile-nav-item active" data-tab="vault">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        <span>Пароли</span>
-      </button>
-      <button class="mobile-nav-item" id="mobile-btn-add">
-        <div class="add-circle">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </div>
-      </button>
-      <button class="mobile-nav-item" id="mobile-btn-gen">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><circle cx="12" cy="12" r="3"/></svg>
-        <span>Генератор</span>
-      </button>
-      <button class="mobile-nav-item" id="mobile-btn-backup">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        <span>Экспорт</span>
-      </button>
-    </div>
-
-  </div>
-
-  <!-- ADD / EDIT ITEM MODAL -->
-  <div id="item-modal" class="modal-overlay hidden">
-    <div class="modal-box glass-panel">
-      <div class="modal-header">
-        <h3 id="modal-title">Новая запись</h3>
-        <button id="modal-close" class="btn-icon">&times;</button>
-      </div>
-      <form id="item-form" class="modal-form">
-        <input type="hidden" id="item-id">
-        
-        <div class="form-row">
-          <label>Категория</label>
-          <div class="cat-select-row">
-            <label class="radio-cat"><input type="radio" name="item-cat" value="accounts" checked><span>Аккаунт</span></label>
-            <label class="radio-cat"><input type="radio" name="item-cat" value="games"><span>Игра</span></label>
-            <label class="radio-cat"><input type="radio" name="item-cat" value="cards"><span>Карта</span></label>
-            <label class="radio-cat"><input type="radio" name="item-cat" value="notes"><span>Заметка</span></label>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="item-name">Название сервиса / Игры</label>
-          <input type="text" id="item-name" required placeholder="Discord, Steam, Email...">
-        </div>
-
-        <div class="form-group">
-          <label for="item-username">Логин / Email</label>
-          <input type="text" id="item-username" placeholder="user@mail.com или никнейм">
-        </div>
-
-        <div class="form-group">
-          <div class="label-with-action">
-            <label for="item-password">Пароль / ПИН</label>
-            <button type="button" id="btn-modal-generate" class="link-btn">Сгенерировать</button>
-          </div>
-          <div class="password-input-wrap">
-            <input type="text" id="item-password" placeholder="Пароль">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="item-url">Веб-сайт (URL)</label>
-          <input type="url" id="item-url" placeholder="https://example.com">
-        </div>
-
-        <div class="form-group">
-          <label for="item-notes">Заметки / 2FA резервные коды</label>
-          <textarea id="item-notes" rows="2" placeholder="Дополнительная информация..."></textarea>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" id="modal-cancel" class="btn-secondary">Отмена</button>
-          <button type="submit" class="btn-primary" id="modal-save">Сохранить</button>
-        </div>
-      </form>
+      <div id="lock-error-msg" class="lock-error-msg" style="display: none;"></div>
     </div>
   </div>
 
-  <!-- PASSWORD GENERATOR MODAL -->
-  <div id="gen-modal" class="modal-overlay hidden">
-    <div class="modal-box glass-panel">
-      <div class="modal-header">
-        <h3>Генератор безопасных паролей</h3>
-        <button id="gen-close" class="btn-icon">&times;</button>
-      </div>
-      <div class="gen-content">
-        <div class="gen-output-box">
-          <input type="text" id="gen-output" readonly value="...">
-          <button id="gen-copy" class="btn-primary">Копировать</button>
-        </div>
-        <div class="gen-strength-meter">
-          <div id="gen-strength-bar" class="strength-bar"></div>
-        </div>
-        <div class="gen-slider-group">
-          <div class="slider-header">
-            <span>Длина пароля:</span>
-            <span id="gen-length-val">20</span>
-          </div>
-          <input type="range" id="gen-length" min="8" max="64" value="20">
-        </div>
-        <div class="gen-options">
-          <label><input type="checkbox" id="gen-opt-upper" checked> Заглавные (A-Z)</label>
-          <label><input type="checkbox" id="gen-opt-lower" checked> Строчные (a-z)</label>
-          <label><input type="checkbox" id="gen-opt-digits" checked> Цифры (0-9)</label>
-          <label><input type="checkbox" id="gen-opt-symbols" checked> Спецсимволы (!@#$)</label>
-        </div>
-        <button id="gen-refresh" class="btn-secondary full-width">Сгенерировать другой</button>
-      </div>
+  <!-- Custom Cyber Wallpaper Context Menu (ПКМ по карточке обоев) -->
+  <div class="kpm-wp-context-menu" id="wp-context-menu" style="display: none;">
+    <div class="kpm-wp-menu-item" data-action="set-base">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <span>Сделать основным фоном (Слой 1)</span>
+    </div>
+    <div class="kpm-wp-menu-item" data-action="set-overlay">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="15" height="15" rx="2"/><rect x="7" y="7" width="15" height="15" rx="2" stroke-dasharray="3 2"/></svg>
+      <span>Наложить как оверлей / рамку (Слой 2)</span>
+    </div>
+    <div class="kpm-wp-menu-item" data-action="clear-overlay" id="wp-menu-item-clear-overlay" style="display: none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      <span>Снять с оверлея</span>
+    </div>
+    <div class="kpm-wp-menu-separator"></div>
+    <div class="kpm-wp-menu-item danger" data-action="delete" id="wp-menu-item-delete">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      <span>Удалить файл обоев</span>
     </div>
   </div>
 
-  <!-- TOAST NOTIFICATIONS -->
-  <div id="toast-container" class="toast-container"></div>
+  <!-- Toast Notification Container -->
+  <div class="toast-box" id="toast-box">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="toast-text">Скопировано в буфер обмена</span>
+  </div>
 
-  <!-- SCRIPTS -->
-  <script src="./crypto-vault.js"></script>
-  <script src="./app.js"></script>
+  <!-- Google Identity Services SDK -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- Scripts -->
+  <script src="js/crypto-vault.js"></script>
+  <script src="js/generator.js"></script>
+  <script src="js/themes.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>

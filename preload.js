@@ -24,6 +24,8 @@ contextBridge.exposeInMainWorld('aegis', {
 
   getGoogleAccount: () => ipcRenderer.invoke('google-account-get'),
   saveGoogleAccount: (data) => ipcRenderer.invoke('google-account-save', data),
+  getMasterHash: () => ipcRenderer.invoke('master-hash-get'),
+  saveMasterHash: (pass) => ipcRenderer.invoke('master-hash-save', pass),
   sealMasterKeyWithGoogle: (key) => ipcRenderer.invoke('google-enclave-seal', key),
   unsealMasterKeyWithGoogle: (sealed) => ipcRenderer.invoke('google-enclave-unseal', sealed),
 

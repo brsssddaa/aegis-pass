@@ -6,13 +6,58 @@ const os = require('os');
 const crypto = require('crypto');
 const VaultSyncManager = require('./vault-sync');
 
-const CONFIG_PATH = path.join(__dirname, 'config.json');
-let config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-const BACKUPS_DIR = path.join(__dirname, 'backups');
-const PUBLIC_DIR = path.join(__dirname, 'public');
+const isInsideAsar = __dirname.includes('app.asar');
+const userServerDir = path.join(os.homedir(), 'AppData', 'Roaming', 'aegis-pass', 'server');
 
-if (!fs.existsSync(BACKUPS_DIR)) fs.mkdirSync(BACKUPS_DIR, { recursive: true });
-if (!fs.existsSync(PUBLIC_DIR)) fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+let CONFIG_PATH = path.join(__dirname, 'config.json');
+let BACKUPS_DIR = path.join(__dirname, 'backups');
+let PUBLIC_DIR = path.join(__dirname, 'public');
+
+if (isInsideAsar) {
+  try {
+    if (!fs.existsSync(userServerDir)) fs.mkdirSync(userServerDir, { recursive: true });
+    CONFIG_PATH = path.join(userServerDir, 'config.json');
+    if (!fs.existsSync(CONFIG_PATH)) {
+      fs.copyFileSync(path.join(__dirname, 'config.json'), CONFIG_PATH);
+    }
+    BACKUPS_DIR = path.join(userServerDir, 'backups');
+  } catch (_) {}
+}
+
+try {
+  if (!fs.existsSync(BACKUPS_DIR)) fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+} catch (_) {}
+
+try {
+  if (!isInsideAsar && !fs.existsSync(PUBLIC_DIR)) fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+} catch (_) {}
+
+let config = {};
+try {
+  config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+} catch (_) {
+  try {
+    config = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf-8'));
+  } catch (e) {
+    config = { port: 8088, pin: '2026' };
+  }
+}
+
+// Merge local secrets from config.local.json (ignored by git)
+const localConfigPath = path.join(__dirname, 'config.local.json');
+if (fs.existsSync(localConfigPath)) {
+  try {
+    const localCfg = JSON.parse(fs.readFileSync(localConfigPath, 'utf-8'));
+    config = Object.assign(config, localCfg);
+  } catch (_) {}
+}
+
+// Merge cloud environment variables (e.g. Render)
+if (process.env.GOOGLE_CLIENT_ID) config.google_client_id = process.env.GOOGLE_CLIENT_ID;
+if (process.env.GOOGLE_CLIENT_SECRET) config.google_client_secret = process.env.GOOGLE_CLIENT_SECRET;
+if (!config.smtp) config.smtp = {};
+if (process.env.SMTP_USER) config.smtp.user = process.env.SMTP_USER;
+if (process.env.SMTP_PASS) config.smtp.pass = process.env.SMTP_PASS;
 
 const syncManager = new VaultSyncManager(config, BACKUPS_DIR);
 
@@ -50,6 +95,7 @@ function getNetworkAddresses() {
 // Generate simple HMAC token for sessions
 const SERVER_PIN = process.env.AEGIS_PIN || config.server_pin || '2026';
 const activeSessions = new Map(); // token -> { user, createdAt }
+let latestGoogleAuth = null;
 
 function generateToken(identity) {
   const secret = config.session_secret || 'aegis_default_secret_2026';
@@ -73,6 +119,9 @@ function verifyGoogleToken(idToken) {
         try {
           const json = JSON.parse(data);
           if (json.email && json.sub) {
+            if (config.google_client_id && json.aud && json.aud !== config.google_client_id) {
+              return reject(new Error('Audience mismatch: Токен не принадлежит этому приложению'));
+            }
             resolve(json);
           } else {
             reject(new Error(json.error_description || 'Invalid Google token'));
@@ -94,7 +143,9 @@ const pendingOtps = new Map(); // email -> { code, expiresAt, attempts }
 
 async function sendOtpEmail(email, code) {
   const smtpConfig = config.smtp || {};
-  if (nodemailer && smtpConfig.user && smtpConfig.pass) {
+  const smtpUser = process.env.SMTP_USER || smtpConfig.user;
+  const smtpPass = process.env.SMTP_PASS || smtpConfig.pass;
+  if (nodemailer && smtpUser && smtpPass) {
     try {
       const transporter = nodemailer.createTransport({
         service: smtpConfig.service || 'gmail',
@@ -102,25 +153,146 @@ async function sendOtpEmail(email, code) {
         port: smtpConfig.port || 465,
         secure: smtpConfig.secure !== false,
         auth: {
-          user: smtpConfig.user,
-          pass: smtpConfig.pass
+          user: smtpUser,
+          pass: smtpPass
         }
       });
+      const htmlBody = `
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Код подтверждения Aegis Pass</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #050811; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #f1f5f9; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #050811; padding: 30px 15px;">
+    <tr>
+      <td align="center">
+        <!-- Main Container Card -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 520px; background: #0c1220; border: 1px solid #1e293b; border-radius: 18px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
+          
+          <!-- Top Neon Cyan Gradient Bar -->
+          <tr>
+            <td style="height: 4px; background: linear-gradient(90deg, #00e5ff 0%, #3b82f6 50%, #8b5cf6 100%);"></td>
+          </tr>
+
+          <!-- Header Section -->
+          <tr>
+            <td style="padding: 32px 32px 20px 32px; text-align: center;">
+              <!-- Shield Icon Badge -->
+              <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin: 0 auto 16px auto;">
+                <tr>
+                  <td style="width: 54px; height: 54px; background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(139,92,246,0.15)); border: 1.5px solid #00e5ff; border-radius: 14px; text-align: center; vertical-align: middle;">
+                    <span style="font-size: 26px; line-height: 54px;">🛡️</span>
+                  </td>
+                </tr>
+              </table>
+              <h1 style="margin: 0 0 6px 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;">Aegis Pass Security</h1>
+              <div style="display: inline-block; background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 20px; padding: 4px 14px; font-size: 11px; font-weight: 700; color: #00e5ff; letter-spacing: 1px; text-transform: uppercase;">
+                Двухфакторная авторизация
+              </div>
+            </td>
+          </tr>
+
+          <!-- Message Body -->
+          <tr>
+            <td style="padding: 0 32px 10px 32px; text-align: center;">
+              <p style="margin: 0; font-size: 14px; color: #94a3b8; line-height: 1.6;">
+                Здравствуйте! Вы запросили вход в защищённое Zero-Knowledge хранилище. Используйте одноразовый код для подтверждения:
+              </p>
+            </td>
+          </tr>
+
+          <!-- OTP Code Box (Hero element) -->
+          <tr>
+            <td style="padding: 16px 32px 24px 32px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #070c18; border: 1.5px solid #00e5ff; border-radius: 14px; box-shadow: 0 0 25px rgba(0,229,255,0.18);">
+                <tr>
+                  <td style="padding: 24px 16px; text-align: center;">
+                    <div style="font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;">
+                      Одноразовый проверочный код
+                    </div>
+                    <div style="font-size: 38px; font-weight: 800; letter-spacing: 8px; color: #00e5ff; font-family: 'Courier New', Courier, monospace; text-shadow: 0 0 14px rgba(0,229,255,0.4); margin: 4px 0;">
+                      ${code}
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: 10px;">
+                      ⏱ Код действителен в течение <strong>5 минут</strong>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Security Attributes Grid -->
+          <tr>
+            <td style="padding: 0 32px 20px 32px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 16px;">
+                <tr>
+                  <td style="font-size: 12px; color: #94a3b8; padding: 4px 0;">
+                    <span style="color: #00e5ff; font-weight: 600;">🔒 Архитектура:</span> Zero-Knowledge (ключи только у вас)
+                  </td>
+                </tr>
+                <tr>
+                  <td style="font-size: 12px; color: #94a3b8; padding: 4px 0;">
+                    <span style="color: #00e5ff; font-weight: 600;">🛡️ Шифрование:</span> Сквозное AES-256-GCM + PBKDF2
+                  </td>
+                </tr>
+                <tr>
+                  <td style="font-size: 12px; color: #94a3b8; padding: 4px 0;">
+                    <span style="color: #00e5ff; font-weight: 600;">💻 Клиент:</span> Aegis Pass Desktop (Windows)
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Warning Alert -->
+          <tr>
+            <td style="padding: 0 32px 24px 32px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; border-radius: 6px;">
+                <tr>
+                  <td style="padding: 12px 14px; font-size: 12px; color: #fca5a5; line-height: 1.5;">
+                    <strong style="color: #ef4444;">Не запрашивали этот код?</strong><br>
+                    Проигнорируйте это письмо и никому не сообщайте код. Никто, включая сотрудников поддержки, не имеет права запрашивать этот код у вас.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="border-top: 1px solid #1e293b; padding: 0;"></td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 32px 28px 32px; text-align: center;">
+              <p style="margin: 0 0 6px 0; font-size: 11px; color: #64748b;">
+                © 2026 Aegis Pass • Защищённая система управления паролями
+              </p>
+              <p style="margin: 0; font-size: 10.5px; color: #475569;">
+                Это автоматическое сервисное уведомление безопасности. Пожалуйста, не отвечайте на это письмо.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `;
+
       await transporter.sendMail({
         from: `"Aegis Pass Security" <${smtpConfig.user}>`,
         to: email,
-        subject: `Код подтверждения Aegis Pass: ${code}`,
+        subject: `🛡️ Код подтверждения Aegis Pass: ${code}`,
         text: `Ваш одноразовый код для входа в Aegis Pass: ${code}\nКод действует 5 минут. Никому не сообщайте этот код.`,
-        html: `
-          <div style="background: #0d1117; color: #f0f6fc; padding: 24px; border-radius: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid rgba(0,229,255,0.3);">
-            <h2 style="color: #00e5ff; margin-top: 0; letter-spacing: 0.5px;">Aegis Pass Security</h2>
-            <p style="color: #94a3b8; font-size: 14px;">Одноразовый код для подтверждения входа в зашифрованное хранилище:</p>
-            <div style="background: rgba(0,229,255,0.08); border: 2px dashed #00e5ff; border-radius: 10px; padding: 18px; text-align: center; margin: 20px 0;">
-              <span style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #ffffff; font-family: monospace;">${code}</span>
-            </div>
-            <p style="color: #64748b; font-size: 12px; margin-bottom: 0;">Код действует 5 минут. Если вы не запрашивали вход, проигнорируйте письмо.</p>
-          </div>
-        `
+        html: htmlBody
       });
       console.log(`[AUTH] Sent real email OTP to ${email}`);
       return { sent: true };
@@ -252,7 +424,133 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 2b. Google Sign-In Verification
+  // 2b. Google OAuth 2.0 Web Callback (from system browser)
+  if (pathname === '/api/auth/google/callback' && req.method === 'GET') {
+    const code = parsedUrl.searchParams.get('code');
+    const errParam = parsedUrl.searchParams.get('error');
+
+    if (errParam || !code) {
+      res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(`
+        <div style="background:#0d1117;color:#ff5555;padding:40px;text-align:center;font-family:sans-serif;">
+          <h2>Ошибка авторизации Google: ${errParam || 'Код не передан'}</h2>
+          <p>Закройте окно и попробуйте снова в приложении.</p>
+        </div>
+      `);
+    }
+
+    try {
+      // Exchange authorization code for tokens
+      const tokenBody = new URLSearchParams({
+        code: code,
+        client_id: config.google_client_id,
+        client_secret: config.google_client_secret,
+        redirect_uri: `http://${req.headers.host}/api/auth/google/callback`,
+        grant_type: 'authorization_code'
+      }).toString();
+
+      const tokenRes = await new Promise((resolve, reject) => {
+        const tr = https.request('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': Buffer.byteLength(tokenBody)
+          }
+        }, (resp) => {
+          let d = '';
+          resp.on('data', chunk => d += chunk);
+          resp.on('end', () => {
+            try { resolve(JSON.parse(d)); } catch (e) { reject(e); }
+          });
+        });
+        tr.on('error', reject);
+        tr.write(tokenBody);
+        tr.end();
+      });
+
+      if (!tokenRes.id_token) {
+        throw new Error(tokenRes.error_description || tokenRes.error || 'Не удалось получить id_token от Google');
+      }
+
+      const googleUser = await verifyGoogleToken(tokenRes.id_token);
+      const email = googleUser.email.toLowerCase();
+
+      // Generate 6-digit OTP code for this user
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      pendingOtps.set(email, {
+        code: otpCode,
+        expiresAt: Date.now() + 5 * 60 * 1000,
+        attempts: 0
+      });
+
+      const mailRes = await sendOtpEmail(email, otpCode);
+
+      // Save latest google auth for polling by Electron
+      latestGoogleAuth = {
+        email: email,
+        name: googleUser.name,
+        picture: googleUser.picture,
+        sub: googleUser.sub,
+        devCode: mailRes.dev ? otpCode : undefined,
+        timestamp: Date.now()
+      };
+
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(`
+        <!DOCTYPE html>
+        <html lang="ru">
+        <head>
+          <meta charset="utf-8">
+          <title>Aegis Pass - Вход выполнен</title>
+          <style>
+            body { background: #080c11; color: #f0f6fc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+            .box { background: #0d1117; border: 1px solid rgba(0,229,255,0.3); border-radius: 16px; padding: 36px 32px; text-align: center; max-width: 440px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+            .avatar { width: 68px; height: 68px; border-radius: 50%; margin-bottom: 16px; border: 2px solid #00e5ff; object-fit: cover; }
+            h2 { color: #00e5ff; margin: 0 0 10px; font-size: 20px; }
+            p { color: #8b949e; font-size: 14px; line-height: 1.5; margin: 0 0 20px; }
+            .email { color: #ffffff; font-weight: 600; background: rgba(0,229,255,0.1); border: 1px solid rgba(0,229,255,0.25); padding: 4px 10px; border-radius: 6px; }
+            .code-box { background: rgba(0,229,255,0.06); border: 1px dashed #00e5ff; border-radius: 8px; padding: 10px; font-size: 13px; color: #94a3b8; margin-bottom: 20px; }
+            .close-btn { background: #21262d; border: 1px solid #30363d; color: #f0f6fc; padding: 10px 22px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+            .close-btn:hover { background: #30363d; border-color: #8b949e; }
+          </style>
+        </head>
+        <body>
+          <div class="box">
+            ${googleUser.picture ? `<img class="avatar" src="${googleUser.picture}" alt="Avatar">` : ''}
+            <h2>✓ Google аккаунт выбран!</h2>
+            <p>Вы вошли как <span class="email">${email}</span>.<br><br>Мы отправили 6-значный проверочный код на вашу почту.</p>
+            ${mailRes.dev ? `<div class="code-box">[Dev Mode] Проверочный код: <b style="color:#00e5ff;font-size:16px;">${otpCode}</b></div>` : ''}
+            <p style="font-size:12px;color:#6e7681;">Вернитесь в приложение <b>Aegis Pass</b>, чтобы ввести код.</p>
+            <button class="close-btn" onclick="window.close()">Закрыть эту вкладку</button>
+          </div>
+          <script>setTimeout(() => window.close(), 5000);</script>
+        </body>
+        </html>
+      `);
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(`
+        <div style="background:#0d1117;color:#ff5555;padding:40px;text-align:center;font-family:sans-serif;">
+          <h2>Ошибка обмена токена Google: ${e.message}</h2>
+          <p>Проверьте Client Secret и Redirect URI в Google Cloud Console.</p>
+        </div>
+      `);
+    }
+  }
+
+  // 2b-2. Poll pending Google Auth from Electron
+  if (pathname === '/api/auth/google/pending' && req.method === 'GET') {
+    const data = latestGoogleAuth;
+    if (parsedUrl.searchParams.get('clear') === '1') {
+      latestGoogleAuth = null;
+    }
+    return sendJson(res, 200, {
+      ok: true,
+      pending: data
+    });
+  }
+
+  // 2b-3. Direct Google ID Token Verification
   if (pathname === '/api/auth/google' && req.method === 'POST') {
     try {
       const body = await readBodyJson(req);
@@ -532,6 +830,9 @@ const PORT = process.env.PORT || config.port || 8088;
 const HOST = process.env.HOST || config.host || '0.0.0.0';
 
 server.on('error', (err) => {
+  try {
+    fs.appendFileSync(path.join(os.homedir(), 'AppData', 'Roaming', 'aegis-pass', 'server_init.log'), `[SERVER ERROR] ${err.message}\n`);
+  } catch (_) {}
   if (err.code === 'EADDRINUSE') {
     console.log(`[SERVER] Port ${PORT} is already in use (Aegis Pass server is already running).`);
   } else {
@@ -540,6 +841,9 @@ server.on('error', (err) => {
 });
 
 server.listen(PORT, HOST, () => {
+  try {
+    fs.appendFileSync(path.join(os.homedir(), 'AppData', 'Roaming', 'aegis-pass', 'server_init.log'), `[SERVER LISTENING] http://${HOST}:${PORT}\n`);
+  } catch (_) {}
   const addrs = getNetworkAddresses();
   console.log('====================================================');
   console.log(`  AEGIS PASS SYNC SERVER v${config.version}`);

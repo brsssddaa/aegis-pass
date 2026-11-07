@@ -6,5 +6,6 @@ screenshot_running.png
 .DS_Store
 Thumbs.db
 server/backups/
+server/config.local.json
 *.enc
 .env
